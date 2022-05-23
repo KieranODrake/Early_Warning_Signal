@@ -3,16 +3,18 @@
 
 The aim is to define Covid-19 wave start dates in the UK and investigate a range of early warning signals,
 comparing their lead time.
+___________
 
-Data inputs
-____________
-UK Covid-19 case numbers
+**Data inputs**
+
+UK Covid-19 case numbers (https://coronavirus.data.gov.uk/details/cases)
 data_2022-May-09 - UK Covid-19 cases by sample date.csv
-UK Covid-19 hospitalisations
+UK Covid-19 hospitalisations (https://coronavirus.data.gov.uk/details/healthcare)
 data_2022-May-09 - UK Covid-19 hospital admissions.csv
 
-Scripts
-_______
+
+**Scripts**
+
 data_load.R
 - Used to load in data files 
 
@@ -30,3 +32,4 @@ wave_define_derivative_model.R
 
 wave_define_overlay.R
 - Main script used control parameters of interest and to call functions described above
+- Also used to plot outputs

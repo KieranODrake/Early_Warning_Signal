@@ -73,6 +73,7 @@ summary(m)
 counter = 0
 for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
   for (k in seq(50,150,10)) {
+    m <- gam_fitting(cases_df = hosp_df, GAM_smooth_function = gsf, deg_free_k = k)
     for (gt in seq(0,0.1,0.01)) {
       UK_model = growth_method(   m
                                 , cases_df

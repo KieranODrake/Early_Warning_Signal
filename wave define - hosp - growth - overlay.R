@@ -20,20 +20,6 @@ filename <- "data_2022-May-09 - UK Covid-19 hospital admissions.csv"
 dat_type <- "hospitalisations"
 hosp_df <- data_load( folder , filename , dat_type ) # Outputs cases_df(date,cases,time,wday)
 
-################################
-
-# Define generalised additive model (GAM) inputs
-GAM_smooth_function = "cr"
-deg_free_k = 100 # Degrees of freedom for GAM model with regard to date
-
-# Calculate generalised additive model (GAM)
-cases_df = hosp_df
-m <- gam_fitting(cases_df, GAM_smooth_function, deg_free_k)
-# Display information for checking model quality and summary data
-par(mfrow=c(2,2))
-gam.check(m)
-summary(m)
-
 #################################
 # Create dataframe for storing summary information for different models
 # !!!!WARNING!!!! This will remove any existing data in this dataframe
@@ -67,9 +53,23 @@ for (r in 1:100){
   names(additional_col) <- col_name
   wave_define_df = cbind(wave_define_df,additional_col[1])
 }
+
+################################
+
+# Define generalised additive model (GAM) inputs
+GAM_smooth_function = "tp"
+deg_free_k = 50 # Degrees of freedom for GAM model with regard to date
+
+# Calculate generalised additive model (GAM)
+cases_df = hosp_df
+m <- gam_fitting(cases_df, GAM_smooth_function, deg_free_k)
+# Display information for checking model quality and summary data
+par(mfrow=c(2,2))
+gam.check(m)
+summary(m)
 ################################
 # Return model from using growth of log(smoothed cases) method to identify wave dates
-growth_threshold = 0.025
+growth_threshold = 0.030
 UK_model = growth_method(   m
                           , cases_df
                           , dat_type

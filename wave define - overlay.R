@@ -3,7 +3,7 @@
 #' and manipulate results from growth and derivative methods
 
 #' Uses non-standard functions, which need to be loaded: data_load(), 
-#' gam_fitting(), derivative_method(), growth_method()
+#' gam_fitting(), wave_define_derivative_method(), wave_define_growth_method()
 
 ###############################
 # install packages for fread (which is quicker than read_csv)
@@ -16,7 +16,7 @@ install.packages("gratia") #https://gavinsimpson.github.io/gratia/
 ###############################
 
 # Load data, trim and organise
-folder <- 'C:/Users/kdrake/Documents/sc2growth/GAM_models'
+folder <- 'C:/Users/kdrake/Documents/GitHub/Early_Warning_Signal'
 
 filename <- "data_2022-May-09 - UK Covid-19 cases by sample date.csv"
 dat_type <- "cases"
@@ -33,8 +33,8 @@ lines(hosp_df$date,hosp_df$cases*10)
 ################################
 
 # Define generalised additive model (GAM) inputs
-GAM_smooth_function = "tp"
-deg_free_k = 5 # Degrees of freedom for GAM model with regard to date
+GAM_smooth_function = "cc"
+deg_free_k = 55 # Degrees of freedom for GAM model with regard to date
 
 # Calculate generalised additive model (GAM)
 cases_df = cas_df
@@ -214,7 +214,7 @@ start_time = Sys.time()
 
   dat_type = "cases"
   cases_df = cas_df
-  for (gsf in c("cc","so","tp","ts","ds","cr","cs")){ # already done "re","gp","ps","cp", and "sos" didn't work
+  for (gsf in c("cc","tp","ts","ds","cr","cs")){ # already done "re","gp","ps","cp", and "so","sos" didn't work
     for (k in 5:300) {
       
       deg_free_k = k
@@ -275,7 +275,7 @@ start_time = Sys.time()
 
   dat_type = "hospitalisations"
   cases_df = hosp_df
-  for (gsf in c("re","gp","so","cc","tp","ts","ds","cr","cs")){ # already done "ps","cp", and "sos" didn't work
+  for (gsf in c("re","gp","cc","tp","ts","ds","cr","cs")){ # already done "ps","cp", and "so","sos" didn't work
     for (k in 5:300) {
       
       deg_free_k = k

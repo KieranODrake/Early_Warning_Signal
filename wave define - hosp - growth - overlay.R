@@ -98,7 +98,7 @@ for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
 wave_define_df <- wave_define_df[-c(1), ]
 
 # Write dataframe to file
-write.csv(wave_define_df, file="wave_define_hosp_growth_2022-05-23.csv")
+write.csv(wave_define_df_7waves, file="wave_define_hosp_growth_7waves_2022-05-23.csv")
 ##############################
 
 # Plot data
@@ -143,3 +143,96 @@ lines(growth_df$date,replicate(length(growth_df$growth),growth_threshold*20),col
 #growth_rate = TTR::ROC(m$fitted.values, type = "discrete")
 #plot(date,growth_rate)
 
+# Just looking at models that idenitified 7 wave starts
+# Plots 
+par(mfrow=c(3,2))
+# wave 1
+hist(wave_define_df_7waves$'wave 1 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$R_squared,col="green")
+
+# wave 2
+hist(wave_define_df_7waves$'wave 2 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$R_squared,col="green")
+
+# wave 3
+hist(wave_define_df_7waves$'wave 3 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$R_squared,col="green")
+
+# wave 4
+hist(wave_define_df_7waves$'wave 4 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$R_squared,col="green")
+
+# wave 5
+hist(wave_define_df_7waves$'wave 5 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$R_squared,col="green")
+
+# wave 6
+hist(wave_define_df_7waves$'wave 6 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$R_squared,col="green")
+
+# wave 7
+hist(wave_define_df_7waves$'wave 7 start', breaks=50,xlab = "Date")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$R_squared,col="green")
+
+par(mfrow=c(5,7))
+# histogram of dates
+hist(wave_define_df_7waves$'wave 1 start', breaks=50)
+hist(wave_define_df_7waves$'wave 2 start', breaks=50)
+hist(wave_define_df_7waves$'wave 3 start', breaks=50)
+hist(wave_define_df_7waves$'wave 4 start', breaks=50)
+hist(wave_define_df_7waves$'wave 5 start', breaks=50)
+hist(wave_define_df_7waves$'wave 6 start', breaks=50)
+hist(wave_define_df_7waves$'wave 7 start', breaks=50)
+# edf/k ratio
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$edf.k..ratio,col="blue",ylab = "edf/k ratio")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$edf.k..ratio,col="blue")
+#growth threshold
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$Growth_threshold,col="purple",ylab = "Growth threshold")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$Growth_threshold,col="purple")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$Growth_threshold,col="purple")
+# k-index
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$k.index,col="red",ylab="k-index")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$k.index,col="red")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$k.index,col="red")
+# R^2
+plot(wave_define_df_7waves$'wave 1 start',wave_define_df_7waves$R_squared,col="green",ylab="R^2")
+plot(wave_define_df_7waves$'wave 2 start',wave_define_df_7waves$R_squared,col="green")
+plot(wave_define_df_7waves$'wave 3 start',wave_define_df_7waves$R_squared,col="green")
+plot(wave_define_df_7waves$'wave 4 start',wave_define_df_7waves$R_squared,col="green")
+plot(wave_define_df_7waves$'wave 5 start',wave_define_df_7waves$R_squared,col="green")
+plot(wave_define_df_7waves$'wave 6 start',wave_define_df_7waves$R_squared,col="green")
+plot(wave_define_df_7waves$'wave 7 start',wave_define_df_7waves$R_squared,col="green")

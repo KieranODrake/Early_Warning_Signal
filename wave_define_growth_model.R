@@ -50,7 +50,7 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
   )
   
   # Find dates when growth goes above and below chosen threshold 
-  growth_df$growth_adj = growth_df$growth + growth_threshold
+  growth_df$growth_adj = growth_df$growth - growth_threshold
   #growth_df$growth_adj = growth_df$growth_rate + threshold
   
   updn <- c(0, diff(sign(growth_df$growth_adj)))
@@ -230,3 +230,4 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
   return(rv)
   
 }
+

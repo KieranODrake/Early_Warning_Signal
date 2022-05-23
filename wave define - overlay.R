@@ -33,7 +33,7 @@ lines(hosp_df$date,hosp_df$cases*10)
 ################################
 
 # Define generalised additive model (GAM) inputs
-GAM_smooth_function = "cc"
+GAM_smooth_function = "cs"
 deg_free_k = 55 # Degrees of freedom for GAM model with regard to date
 
 # Calculate generalised additive model (GAM)
@@ -95,7 +95,7 @@ UK_model_derivative = derivative_method( m, cases_df, dat_type, wave_bands_df, G
 
 # Return model from using growth of log(smoothed cases) method
 growth_threshold = 0
-UK_model_growth = growth_method( m, cases_df, dat_type, wave_bands_df, GAM_smooth_function, threshold, significance_level, deg_free_k)
+UK_model_growth = growth_method( m, cases_df, dat_type, wave_bands_df, GAM_smooth_function, growth_threshold, significance_level, deg_free_k)
 
 #################################
 
@@ -337,7 +337,7 @@ start_time = Sys.time()
 end_time = Sys.time()
 message("Total time taken: ", end_time - start_time)
 
-#Remove the first row which if NAs
+#Remove the first row which contains NAs (from when first created)
 wave_define_df <- wave_define_df[-c(1), ]
 
 # Convert dates

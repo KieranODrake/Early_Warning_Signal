@@ -69,25 +69,35 @@ gam.check(m)
 summary(m)
 ################################
 # Return model from using growth of log(smoothed cases) method to identify wave dates
-growth_threshold = 0.030
-UK_model = growth_method(   m
-                          , cases_df
-                          , dat_type
-                          , wave_bands_df
-                          , GAM_smooth_function
-                          , growth_threshold
-                          , deg_free_k
-)
+#growth_threshold = 0.030
+counter = 0
+for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
+  for (k in seq(50,150,10)) {
+    for (gt in seq(0,0.1,0.01)) {
+      UK_model = growth_method(   m
+                                , cases_df
+                                , dat_type
+                                , wave_bands_df
+                                , GAM_smooth_function = gsf
+                                , growth_threshold = gt
+                                , deg_free_k = k
+      )
+      # Add output to dataframe collating previously produced model summaries
+      wave_define_df = rbind(wave_define_df,UK_model[1,])
+      counter = counter + 1
+      message(counter," of 1331 complete")
+    }
+  }
+}
 
-# Add output to dataframe collating previously produced model summaries
-wave_define_df = rbind(wave_define_df,UK_model[1,])
+
 
 # Remove the first row which contains NAs (from when first created)
 # (Only needs to be done once)
 wave_define_df <- wave_define_df[-c(1), ]
 
 # Write dataframe to file
-write.csv(wave_define_df, file="wave_define_df_2022-05-23.csv")
+write.csv(wave_define_df, file="wave_define_hosp_growth_2022-05-23.csv")
 ##############################
 
 # Plot data

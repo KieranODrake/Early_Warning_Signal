@@ -31,5 +31,8 @@ wave_define_derivative_model.R
 	in supplementary methods
 
 wave_define_overlay.R
-- Main script used control parameters of interest and to call functions described above
-- Also used to plot outputs
+- Main script used to control parameters of interest and to call functions described above
+- Also used to plot outputs (although data is not returned from functions and so must be generated from within the relevant functions)
+
+wave_define_hosp_growth_overlay.R
+- As above but focused on hospitalisation data and varying the growth threshold

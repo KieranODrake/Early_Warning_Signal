@@ -57,8 +57,8 @@ for (r in 1:100){
 ################################
 
 # Define generalised additive model (GAM) inputs
-GAM_smooth_function = "tp"
-deg_free_k = 50 # Degrees of freedom for GAM model with regard to date
+GAM_smooth_function = "ps"
+deg_free_k = 170 # Degrees of freedom for GAM model with regard to date
 
 # Calculate generalised additive model (GAM)
 cases_df = hosp_df
@@ -72,7 +72,7 @@ summary(m)
 #growth_threshold = 0.030
 counter = 0
 for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
-  for (k in seq(50,150,10)) {
+  for (k in seq(150,300,10)) {
     m <- gam_fitting(cases_df = hosp_df, GAM_smooth_function = gsf, deg_free_k = k)
     for (gt in seq(0,0.1,0.01)) {
       UK_model = growth_method(   m
@@ -106,13 +106,27 @@ par(mfrow=c(2,1))
 par(mfrow=c(1,1))
 
 # Plot cases and model and annotate with waves
-plot(cases_df$time,cases_df$cases,xlab = "year",ylab = "cases",typ="l")
-lines(cases_df$time,m$fitted.values,col="blue")
-points(cases_df$time[wave_start_ix],m$fitted.values[wave_start_ix],col="red",cex=2)
-#points(cases_df$time[wave_reset_ix],m$fitted.values[wave_reset_ix],col="green",cex=2)
-legend("topright",c("cases","model","wave start","wave reset"),col=c("black","blue","red","darkgreen"),lty=1)
-text(cases_df$time[wave_start_ix],m$fitted.values[wave_start_ix]+500,c(seq(1,length(wave_start_ix))),col="red")
+plot(cases_df$date,cases_df$cases,xlab = "Date",ylab = "UK Covid-19 hospitalisations",typ="l", col="black")
+lines(cases_df$date,m$fitted.values,col="blue")
+points(cases_df$date[wave_start_ix],m$fitted.values[wave_start_ix],col="red",cex=1)
+points(cases_df$date[wave_start_ix],m$fitted.values[wave_start_ix],col="red",cex=2)
+points(cases_df$date[wave_start_ix],m$fitted.values[wave_start_ix],col="red",cex=3)
+
+points(cases_df$date[wave_start_ix],m$fitted.values[wave_start_ix],col="darkgreen",cex=3)
+
+points(cases_df$date[wave_reset_ix],m$fitted.values[wave_reset_ix],col="darkgreen",cex=3)
+#legend("topright",c("cases","model","wave start","wave reset"),col=c("black","blue","red","darkgreen"),lty=1)
+legend("topright",c("hospitalisations","model","wave start (growth threshold = 0.02)"),col=c("black","blue","red"),lty=1)
+legend("topright",c("hospitalisations","model","wave start (growth threshold = 0)", "wave start (growth threshold = 0.033)"),col=c("black","blue","red","darkgreen"),lty=1)
+text(cases_df$date[wave_start_ix],m$fitted.values[wave_start_ix]+500,c(seq(1,length(wave_start_ix))),col="red")
 #text(cases_df$time[wave_reset_ix],m$fitted.values[wave_reset_ix]+500,c(seq(1,length(wave_reset_ix))),col="darkgreen")
+
+# Log of hospitalisations
+par(mfrow=c(2,1))
+plot(cases_df$date,cases_df$cases,xlab = "Date",ylab = "UK Covid-19 hospitalisations",typ="l", col="black")
+lines(cases_df$date,log(cases_df$cases)*2000+2000,col="blue")
+plot(cases_df$date,log(cases_df$cases),col="blue")
+
 
 # Plot residuals
 plot(cases_df$time,m$residuals,xlab = "year", ylab = "GAM residuals")
@@ -120,7 +134,7 @@ plot(cases_df$time,m$residuals,xlab = "year", ylab = "GAM residuals")
 # Plot growth and log(growth)
 plot(growth_df$date,growth_df$growth,xlab="date",ylab="growth for smoothed log cases")
 lines(growth_df$date,y=replicate(length(growth_df$date),0),col="black")
-points(growth_df$date[wave_start_ix],growth_df$growth[wave_start_ix],col="red")
+points(growth_df_1$date[wave_start_ix],growth_df_1$growth[wave_start_ix],col="red")
 plot(cases_df$time,cases_df$smoothedLogCases,xlab="date",ylab="smoothed log cases")
 lines(cases_df$time,y=replicate(length(cases_df$time),0),col="black")
 points(cases_df$time[wave_start_ix],cases_df$smoothedLogCases[wave_start_ix],col="red")
@@ -130,20 +144,69 @@ par(mfrow=c(1,1))
 plot(cases_df$date,cases_df$smoothedLogCases,xlab="date",ylab="") #,ylab="smoothed log cases")
 lines(cases_df$date,y=replicate(length(cases_df$date),0),col="black")
 line_for_xaxis = replicate(length(cases_df$date),0)
-points(cases_df$date[wave_start_ix],line_for_xaxis[wave_start_ix],col="red")
+points(cases_df$date[wave_start_ix],line_for_xaxis[wave_start_ix],col="red",cex=1)
+points(cases_df$date[wave_start_ix],line_for_xaxis[wave_start_ix],col="red",cex=2)
+points(cases_df$date[wave_start_ix],line_for_xaxis[wave_start_ix],col="red",cex=3)
 points(cases_df$date[wave_reset_ix],line_for_xaxis[wave_reset_ix],col="darkgreen")
 #points(cases_df$date[wave_start_ix],cases_df$smoothedLogCases[wave_start_ix],col="red")
 lines(growth_df$date,growth_df$growth*20,col="blue") # growth in smoothed log cases
 lines(growth_df$date,growth_df$growth_adj*20,col="blue") # growth in smoothed log cases
-legend("bottomright",legend = c("Smoothed log(cases)","growth in smoothed log(cases) * 20","Wave start","Wave reset"),col=c("black","blue","red","darkgreen"),lty=1,cex=0.8) 
+legend("bottomright",legend = c("Smoothed log(hospitalisations)","Growth in smoothed log(hospitalisations) * 20","Wave start","Wave reset"),col=c("black","blue","red","darkgreen"),lty=1,cex=0.8) 
+legend("bottomright",legend = c("Smoothed log(hospitalisations)","Growth in smoothed log(hospitalisations) * 20 -0.02","Wave start"),col=c("black","blue","red"),lty=1,cex=0.8) 
 text(as.Date(cases_df$date[wave_start_ix]),growth_df$growth[wave_start_ix]*20+0.5,c(seq(1,length(wave_start_ix))),col="red")
 text(as.Date(cases_df$date[wave_reset_ix]),growth_df$growth[wave_reset_ix]*20+0.5,c(seq(1,length(wave_reset_ix))),col="darkgreen")
-lines(growth_df$date,replicate(length(growth_df$growth),growth_threshold*20),col="blue")
+lines(growth_df$date,replicate(length(growth_df$growth),(growth_threshold+0.05)*20),col="blue")
+
+# Comparison of wave start date identification at different levels of growth of log(smoothed hospitalisations)
+par(mfrow=c(1,1))
+growth_threshold = 0#.033
+plot(growth_df$date
+     , growth_df$growth
+     , col="blue"
+     , typ="l"
+     , xlab="Date"
+     , ylab="Growth in log(smoothed hospitalisations)")
+lines(growth_df$date,growth_df$growth-growth_threshold,col="green")
+lines(cases_df$date,y=replicate(length(cases_df$date),0),col="black")
+line_for_xaxis = replicate(length(cases_df$date),0)
+points(cases_df$date[wave_start_ix],line_for_xaxis[wave_start_ix],col="red",cex=2)
+points(cases_df$date[wave_start_ix],line_for_xaxis[wave_start_ix],col="darkgreen",cex=2)
+legend("topright"
+       , legend = c("threshold = 0","threshold = 0.02","Wave start (threshold = 0)","Wave start (threshold = 0.02")
+       , col=c("blue","green","red","darkgreen")
+       , lty=1
+       , cex=1) 
+
 
 #growth_rate = TTR::ROC(m$fitted.values, type = "discrete")
 #plot(date,growth_rate)
 
-# Just looking at models that idenitified 7 wave starts
+# Just looking at models that identified 7 wave starts
+wave_define_df_7waves = wave_define_df[wave_define_df$Number_of_waves==7,]
+wave_define_df_7waves = wave_define_df_7waves[!is.na(wave_define_df_7waves$Data_type),]
+write.csv(wave_define_df_7waves, file="wave_define_hosp_growth_7waves_2022-05-24.csv")
+
+wave_define_df_7waves_k100_150 = wave_define_df_7waves[wave_define_df_7waves$Degrees_of_freedom_k>99,]
+wave_define_df_7waves_k100_150 = wave_define_df_7waves_k100_150[!is.na(wave_define_df_7waves_k100_150$Data_type),]
+
+wave_define_df_7waves_k100_150_gt_0 = wave_define_df_7waves_k100_150[wave_define_df_7waves_k100_150$Growth_threshold==0,]
+wave_define_df_7waves_k100_150_gt_0 = wave_define_df_7waves_k100_150_gt_0[!is.na(wave_define_df_7waves_k100_150_gt_0$Data_type),]
+
+
+x = wave_define_df_7waves_k100_150_gt_0$'wave 2 start'
+y1 = wave_define_df_7waves_k100_150$edf.k..ratio
+y2 = wave_define_df_7waves_k100_150$Growth_threshold
+y3 = wave_define_df_7waves_k100_150$k.index
+
+hist(x, breaks=30, xlab = "Date")
+
+plot(x,y1,ylim=c(0,1.5))
+points(x,y3,col="blue")
+points(x,y2,col="red")
+
+
+
+
 # Plots 
 par(mfrow=c(3,2))
 # wave 1

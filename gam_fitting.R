@@ -16,7 +16,9 @@ gam_fitting <- function( cases_df, GAM_smooth_function = "cc", deg_free_k = 30 )
   
   # Fit generalised additive model (GAM)
   m <- mgcv::gam( cases ~ s( time, bs=GAM_smooth_function, k = deg_free_k ) + s( wday, bs="cc", k = 7), family = quasipoisson, data = cases_df )
-  # Plot graphs to check quality of model fit
+  #m <- mgcv::gam( cases ~ s( time, bs=GAM_smooth_function, k = deg_free_k ), family = quasipoisson, data = cases_df )
+  
+    # Plot graphs to check quality of model fit
   par(mfrow=c(2,2))
   #gam.check(m)
   #summary(m)

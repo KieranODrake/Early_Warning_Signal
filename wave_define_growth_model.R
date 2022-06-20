@@ -100,19 +100,23 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
     
     # Trim wave start and reset dates
     if ( length(wave_start_drop_list) > 0 ){
-      wave_start_adj_ix <- wave_start_ix[-wave_start_drop_list]
-      wave_start_adj_dates <- cases_df$date[wave_start_adj_ix]
+      wave_start_ix_adj <- wave_start_ix[-wave_start_drop_list]
+      wave_start_dates_adj <- cases_df$date[wave_start_ix_adj]
+    } else {
+      wave_start_ix_adj <- wave_start_ix
+      wave_start_dates_adj <- wave_start_dates
     }
-    #wave_reset_adj_ix <- wave_reset_ix[-wave_reset_drop_list]
+    
+    #wave_reset_ix_adj <- wave_reset_ix[-wave_reset_drop_list]
     #wave_reset_dates <- cases_df$date[wave_reset_ix]
-    # Plot before and after adjustment for waves with low resolution
+    ## Plot before and after adjustment for waves with low resolution
     #par(mfrow=c(2,1))
     #plot(cases_df$date,cases_df$cases)
     #points(cases_df$date[wave_start_ix],cases_df$cases[wave_start_ix],col="red",cex=3)
     #points(cases_df$date[wave_reset_ix],cases_df$cases[wave_reset_ix],col="green",cex=3)
     #plot(cases_df$date,cases_df$cases)
-    #points(cases_df$date[wave_start_adj_ix],cases_df$cases[wave_start_adj_ix],col="red",cex=3)
-    #points(cases_df$date[wave_reset_adj_ix],cases_df$cases[wave_reset_adj_ix],col="green",cex=3)
+    #points(cases_df$date[wave_start_ix_adj],cases_df$cases[wave_start_ix_adj],col="red",cex=3)
+    #points(cases_df$date[wave_reset_ix_adj],cases_df$cases[wave_reset_ix_adj],col="green",cex=3)
   }
   ####################
   
@@ -248,6 +252,7 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
                     , "Derivative_significance_level" = NA
                     , "Growth_threshold" = growth_threshold
                     , "Number_of_waves" = length(wave_start_dates) #length(wave_dates_nondecimal$start),
+                    , "Number_of_waves_adjusted" = ifelse( exists("wave_start_dates_adj") , length(wave_start_dates_adj) , wave_start_dates ) 
   )
   
   for (i in 1:100){
@@ -257,20 +262,35 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
     names(additional_col) <- col_name
     rv = cbind(rv,additional_col[1])
   }
+  for (i in 1:100){
+    j = i
+    col_name = paste("wave",j,"start_adj")
+    additional_col = data.frame(placeholder_name = NA)
+    names(additional_col) <- col_name
+    rv = cbind(rv,additional_col[1])
+  }
   for (r in 1:100){
     s = r
-    col_name = paste("wave",r,"end")
+    col_name = paste("wave",s,"end")
     additional_col = data.frame(placeholder_name = NA)
     names(additional_col) <- col_name
     rv = cbind(rv,additional_col[1])
   }
   
-  for (u in 1:length(wave_start_dates)){
-    rv[u+15] = as.Date(wave_start_dates[u],origin = "1970-01-01")
-  }
   
-  for (v in 1:length(wave_reset_dates)){
-    rv[v+15+100] = as.Date(wave_reset_dates[v],origin = "1970-01-01")
+  for (u in 1:length(wave_start_dates)){
+    rv[u+16] = as.Date(wave_start_dates[u],origin = "1970-01-01")
+  }
+  # Also include list of dates where start dates for peaks with low resolution
+  # have been removed. Note that this list may be exactly the same as above if
+  # no adjustments have been made
+  for (v in 1:length(wave_start_dates_adj)){
+      rv[v+16+100] = as.Date(wave_start_dates_adj[u],origin = "1970-01-01")
+  }  
+
+  # NOT CURRENTLY ADJUSTING FOR WAVE RESOLUTION
+  for (w in 1:length(wave_reset_dates)){
+    rv[w+16+100+100] = as.Date(wave_reset_dates[v],origin = "1970-01-01")
   }
   
   return(rv)

@@ -1,14 +1,11 @@
-#' Estimation of case/hospitalisation growth rates with semi-parametric 
-#' statistical models
+#' Estimation of Covid-19 wave start and peak dates based on case/hospitalisation
+#' data 
 #' 
-#' This function estimates logistic growth rates and growth of cases 
-#' from line-listed case data. 
-#' Estimates are made using generalised additive models with smooth splines for
-#' variation over time. 
-#' Growth in cases is estimated by fitting a quasipoisson model for case numbers
-#' over time with a periodic cubic spline to capture changing testing behavior
-#' by day of week. 
-#' 
+#' This function caclulates first derivative of a generalised additive model
+#' fitted to case/hospitalisation data with smooth splines for variation over time. 
+#' The first derivative can be used to find turning points in the number of cases/
+#' hospitalisations in order to define the start and peak of a wave.
+#'  
 #' @param m Generalised additive model for cases/hospitalisations generated 
 #'    using mgcv::gam()
 #' @param cases_df A data frame representing line-listed case data with required 
@@ -23,7 +20,8 @@
 #'    define wave
 #' @param significance_level Level of significance used for confidence bands on 
 #'    first derivative
-#' @return Data frame of various model information and identified wave start and end dates
+#' @return Data frame of various model information and identified wave start and
+#'    end dates
 
 # Create function
 derivative_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_function, derivative_threshold = 0, significance_level = 0.95, deg_free_k)

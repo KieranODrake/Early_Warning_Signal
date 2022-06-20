@@ -22,7 +22,7 @@ hosp_df <- data_load( folder , filename , dat_type ) # Outputs cases_df(date,cas
 
 #################################
 # Create dataframe for storing summary information for different models
-# !!!!WARNING!!!! This will remove any existing data in this dataframe
+#** !!!!WARNING!!!! This will remove any existing data in this dataframe**
 wave_define_df <- data.frame( "Data_type" = NA#c()
                               , "GAM method" = NA#c()
                               , "GAM smooth function" = NA#c()
@@ -57,8 +57,8 @@ for (r in 1:100){
 ################################
 
 # Define generalised additive model (GAM) inputs
-GAM_smooth_function = "ps"
-deg_free_k = 170 # Degrees of freedom for GAM model with regard to date
+GAM_smooth_function = "tp"
+deg_free_k = 150 # Degrees of freedom for GAM model with regard to date
 
 # Calculate generalised additive model (GAM)
 cases_df = hosp_df
@@ -71,10 +71,14 @@ summary(m)
 # Return model from using growth of log(smoothed cases) method to identify wave dates
 #growth_threshold = 0.030
 counter = 0
-for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
-  for (k in seq(150,300,10)) {
+gsf_list = c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")
+k_list = seq(50,300,10)
+gt_list = seq(0,0.1,0.01)
+number_of_models = length(gsf_list) * length(k_list) * length(gt_list)
+for (gsf in gsf_list){
+  for (k in k_list) {
     m <- gam_fitting(cases_df = hosp_df, GAM_smooth_function = gsf, deg_free_k = k)
-    for (gt in seq(0,0.1,0.01)) {
+    for (gt in gt_list) {
       UK_model = growth_method(   m
                                 , cases_df
                                 , dat_type
@@ -86,7 +90,7 @@ for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
       # Add output to dataframe collating previously produced model summaries
       wave_define_df = rbind(wave_define_df,UK_model[1,])
       counter = counter + 1
-      message(counter," of 1331 complete")
+      message(counter," of ",number_of_models," complete")
     }
   }
 }
@@ -98,7 +102,7 @@ for (gsf in c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")){
 wave_define_df <- wave_define_df[-c(1), ]
 
 # Write dataframe to file
-write.csv(wave_define_df_7waves, file="wave_define_hosp_growth_7waves_2022-05-23.csv")
+write.csv(wave_define_df, file="wave_define_hosp_growth-remove-low-resolution_2022-06-20.csv")
 ##############################
 
 # Plot data
@@ -124,7 +128,7 @@ text(cases_df$date[wave_start_ix],m$fitted.values[wave_start_ix]+500,c(seq(1,len
 # Log of hospitalisations
 par(mfrow=c(2,1))
 plot(cases_df$date,cases_df$cases,xlab = "Date",ylab = "UK Covid-19 hospitalisations",typ="l", col="black")
-lines(cases_df$date,log(cases_df$cases)*2000+2000,col="blue")
+lines(cases_df$time,log(cases_df$cases)-6.5,col="blue")
 plot(cases_df$date,log(cases_df$cases),col="blue")
 
 
@@ -134,7 +138,7 @@ plot(cases_df$time,m$residuals,xlab = "year", ylab = "GAM residuals")
 # Plot growth and log(growth)
 plot(growth_df$date,growth_df$growth,xlab="date",ylab="growth for smoothed log cases")
 lines(growth_df$date,y=replicate(length(growth_df$date),0),col="black")
-points(growth_df_1$date[wave_start_ix],growth_df_1$growth[wave_start_ix],col="red")
+points(growth_df$date[wave_start_ix],growth_df$growth[wave_start_ix],col="red")
 plot(cases_df$time,cases_df$smoothedLogCases,xlab="date",ylab="smoothed log cases")
 lines(cases_df$time,y=replicate(length(cases_df$time),0),col="black")
 points(cases_df$time[wave_start_ix],cases_df$smoothedLogCases[wave_start_ix],col="red")

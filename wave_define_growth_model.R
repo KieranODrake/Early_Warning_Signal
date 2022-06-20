@@ -69,50 +69,52 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
   # Define wave start and reset dates
   wave_start_dates <- cases_df$date[wave_start_ix]
   wave_reset_dates <- cases_df$date[wave_reset_ix]
-  
-  # Determine whether identified wave should be retained, based on:
-  # peak to trough range, peak to peak range and time resolution (time between peaks)
-  # Need at least two of these rules to be breached for it to be removed as a wave
-  peak_trough_cutoff = 1.379 #  Next trough must be lower than this multiplication factor
-  trough_peak_cutoff = 1/peak_trough_cutoff # Next peak must be greater than this multiplication factor
-  time_cutoff = 55 # days between peaks must be greater than this
-  wave_start_drop_list = c()
-  wave_reset_drop_list = c()
-  if ( wave_reset_ix[1] < wave_start_ix[1] ){
-    wave_start_ix = c(NA,wave_start_ix)
-  }
-  for (i in 1:length(wave_reset_ix)-1){
-    peak_trough_ratio = cases_df$cases[wave_reset_ix][i-1] / cases_df$cases[wave_start_ix][i]
-    trough_peak_ratio = cases_df$cases[wave_start_ix][i] / cases_df$cases[wave_reset_ix][i]
-    days_peak_peak = cases_df$date[wave_reset_ix][i] - cases_df$date[wave_reset_ix][i-1]
-    a = ifelse( peak_trough_ratio < peak_trough_cutoff , 1 , 0 )
-    b = ifelse( trough_peak_ratio < trough_peak_cutoff , 1 , 0 )
-    c = ifelse( days_peak_peak < time_cutoff , 1 , 0 )
-    if( !is.na(sum(a,b,c)) ){
-      if ( sum(a,b,c) == 3 ){ 
-        wave_start_drop_ix = i
-        wave_start_drop_list = c(wave_start_drop_list,wave_start_drop_ix)
-        #wave_reset_drop_list = c(wave_reset_drop_list,wave_reset_drop)
+  ################
+  if ((length(wave_start_ix) & length(wave_reset_ix)) != 0){
+    # Determine whether identified wave should be retained, based on:
+    # peak to trough range, peak to peak range and time resolution (time between peaks)
+    # Need at least two of these rules to be breached for it to be removed as a wave
+    peak_trough_cutoff = 1.379 #  Next trough must be lower than this multiplication factor
+    trough_peak_cutoff = 1/peak_trough_cutoff # Next peak must be greater than this multiplication factor
+    time_cutoff = 55 # days between peaks must be greater than this
+    wave_start_drop_list = c()
+    wave_reset_drop_list = c()
+    if ( wave_reset_ix[1] < wave_start_ix[1] ){
+      wave_start_ix = c(NA,wave_start_ix)
+    }
+    for (i in 1:length(wave_reset_ix)-1){
+      peak_trough_ratio = cases_df$cases[wave_reset_ix][i-1] / cases_df$cases[wave_start_ix][i]
+      trough_peak_ratio = cases_df$cases[wave_start_ix][i] / cases_df$cases[wave_reset_ix][i]
+      days_peak_peak = cases_df$date[wave_reset_ix][i] - cases_df$date[wave_reset_ix][i-1]
+      a = ifelse( peak_trough_ratio < peak_trough_cutoff , 1 , 0 )
+      b = ifelse( trough_peak_ratio < trough_peak_cutoff , 1 , 0 )
+      c = ifelse( days_peak_peak < time_cutoff , 1 , 0 )
+      if( !is.na(sum(a,b,c)) ){
+        if ( sum(a,b,c) == 3 ){ 
+          wave_start_drop_ix = i
+          wave_start_drop_list = c(wave_start_drop_list,wave_start_drop_ix)
+          #wave_reset_drop_list = c(wave_reset_drop_list,wave_reset_drop)
+        }
       }
     }
+    
+    # Trim wave start and reset dates
+    if ( length(wave_start_drop_list) > 0 ){
+      wave_start_adj_ix <- wave_start_ix[-wave_start_drop_list]
+      wave_start_adj_dates <- cases_df$date[wave_start_adj_ix]
+    }
+    #wave_reset_adj_ix <- wave_reset_ix[-wave_reset_drop_list]
+    #wave_reset_dates <- cases_df$date[wave_reset_ix]
+    # Plot before and after adjustment for waves with low resolution
+    #par(mfrow=c(2,1))
+    #plot(cases_df$date,cases_df$cases)
+    #points(cases_df$date[wave_start_ix],cases_df$cases[wave_start_ix],col="red",cex=3)
+    #points(cases_df$date[wave_reset_ix],cases_df$cases[wave_reset_ix],col="green",cex=3)
+    #plot(cases_df$date,cases_df$cases)
+    #points(cases_df$date[wave_start_adj_ix],cases_df$cases[wave_start_adj_ix],col="red",cex=3)
+    #points(cases_df$date[wave_reset_adj_ix],cases_df$cases[wave_reset_adj_ix],col="green",cex=3)
   }
-  
-  # Trim wave start and reset dates
-  if ( length(wave_start_drop_list) > 0 ){
-    wave_start_adj_ix <- wave_start_ix[-wave_start_drop_list]
-    wave_start_adj_dates <- cases_df$date[wave_start_adj_ix]
-  }
-  #wave_reset_adj_ix <- wave_reset_ix[-wave_reset_drop_list]
-  #wave_reset_dates <- cases_df$date[wave_reset_ix]
-  # Plot before and after adjustment for waves with low resolution
-  par(mfrow=c(2,1))
-  plot(cases_df$date,cases_df$cases)
-  points(cases_df$date[wave_start_ix],cases_df$cases[wave_start_ix],col="red",cex=3)
-  points(cases_df$date[wave_reset_ix],cases_df$cases[wave_reset_ix],col="green",cex=3)
-  plot(cases_df$date,cases_df$cases)
-  points(cases_df$date[wave_start_adj_ix],cases_df$cases[wave_start_adj_ix],col="red",cex=3)
-  #points(cases_df$date[wave_reset_adj_ix],cases_df$cases[wave_reset_adj_ix],col="green",cex=3)
-  
+  ####################
   
   # Return error message if more than 9 waves identified
   #if (length(wave_start_dates) > 9){

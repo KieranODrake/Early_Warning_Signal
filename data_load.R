@@ -28,7 +28,7 @@ data_load <- function( folder, filename, dat_type )
     cases_df$date <- rev(cases_df$date)
     cases_df$cases <- rev(cases_df$cases)
   }
-  cases_df$date <- as.Date( cases_df$date ) # Change format of date
+  cases_df$date <- as.Date( cases_df$date , format = "%d/%m/%Y") # Change format of date
   cases_df$time <- lubridate::decimal_date(cases_df$date) # Add column for decimal date
   cases_df$wday <- lubridate::wday( cases_df$date ) # Add column for day of week
 

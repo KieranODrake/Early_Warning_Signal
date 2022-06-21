@@ -71,11 +71,13 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
   wave_reset_dates <- cases_df$date[wave_reset_ix]
   ################
   if ((length(wave_start_ix) & length(wave_reset_ix)) != 0){
-    # Determine whether identified wave should be retained, based on:
-    # peak to trough range, peak to peak range and time resolution (time between peaks)
-    # Need at least two of these rules to be breached for it to be removed as a wave
-    peak_trough_cutoff = 1.379 #  Next trough must be lower than this multiplication factor
-    trough_peak_cutoff = 1/peak_trough_cutoff # Next peak must be greater than this multiplication factor
+    #' Determine whether identified wave should be retained, based on:
+    #' peak-to-trough ratio, peak-to-peak ratio and temporal resolution (time 
+    #' between peaks).
+    #' Waves with larger ratios and higher temporal resolution retained,
+    #' while those not meeting the cut-offs are removed.
+    peak_trough_cutoff = 1.379 #  Ratio of peak prior to wave start date and trough around start date must be lower than this peak-to-trough ratio
+    trough_peak_cutoff = 1/peak_trough_cutoff # Ratio of next peak after trough at wave start date must be greater than this trough-to-peak ratio
     time_cutoff = 55 # days between peaks must be greater than this
     wave_start_drop_list = c()
     wave_reset_drop_list = c()

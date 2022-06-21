@@ -285,7 +285,7 @@ growth_method <- function( m, cases_df, dat_type, wave_bands_df, GAM_smooth_func
   # have been removed. Note that this list may be exactly the same as above if
   # no adjustments have been made
   for (v in 1:length(wave_start_dates_adj)){
-      rv[v+16+100] = as.Date(wave_start_dates_adj[u],origin = "1970-01-01")
+      rv[v+16+100] = as.Date(wave_start_dates_adj[v],origin = "1970-01-01")
   }  
 
   # NOT CURRENTLY ADJUSTING FOR WAVE RESOLUTION

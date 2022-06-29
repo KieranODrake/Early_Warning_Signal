@@ -380,7 +380,7 @@ for (i in 1:dim(ews)[1]){
          , xlim=c(ews$date[1],ews$date[length(ews$date)])
          , typ = "l")
     lines(ews$date[1:expanding_window_end]
-         , ews$cases[ 1:expanding_window_end ] * max( dat_df$cases ) / max( ews$cases )
+         , (ews$cases[ 1:expanding_window_end ]-min(ews$cases)) * max( dat_df$cases ) / (max( ews$cases )-min(ews$cases)) # normalising to hospitalisation data so looks ok in plot
          , xlab="Date"
          , ylab=c("Covid-19",dat_type)
          , xlim=c(ews$date[1],ews$date[length(ews$date)])

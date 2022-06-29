@@ -66,15 +66,26 @@ wave_reset_derivative_method <- function( dat_df, dat_type )
     if (window_size >= min_window){
       
         #' Fit GAM to expanding data window
-        GAM_hosp <- gam_fitting(  dat_df[ expanding_window_start : expanding_window_end ]
-                                , GAM_smooth_function = "ps"
-                                , deg_free_k = min(c(window_size-5,30))) #**CHECK THIS K**
+        
+        #' Some issues with the number of knots being greater than number of
+        #' unique data points, so if there is an error then move on to next
+        #' iteration in For loop.
+        GAM_test <- try( gam_fitting(  dat_df[ expanding_window_start : expanding_window_end ]
+                                     , GAM_smooth_function = "ps"
+                                     , deg_free_k = min(c(window_size-5,30))) #**CHECK THIS K**
+                       , silent = TRUE )
+
+        ifelse ( class( GAM_test ) %in% 'try-error' , next, "continue" )
+        GAM_hosp <- gam_fitting( dat_df[ expanding_window_start : expanding_window_end ]
+                                       , GAM_smooth_function = "ps"
+                                       , deg_free_k = min( c( window_size-5 , 30 ) ) )#**CHECK THIS K**
+                    
         #' Calculate derivative of fitted GAM
         GAM_derivative <- gratia::derivatives(   GAM_hosp 
                                                , term = "s(time)" 
                                                , n = length( GAM_hosp$fitted.values ) 
                                                , level = 0.95 )
-  
+
         #' Test for t-13 to t-7 being increasingly negative derivative
         #' and t-6 to t0 being stationary i.e. derivative = 0 within confidence interval
         if (window_size >= 14){

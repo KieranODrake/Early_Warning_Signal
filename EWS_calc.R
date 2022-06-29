@@ -61,15 +61,18 @@ ews = ews[,c("Date","O_Ct")] #O_Ct, N-Ct, S-Ct, Control_Ct, Ct_min, Ct_mean, min
 dat_type = "O-gene Ct values"
 colnames(ews) <- c("date","cases") # Rename columns
 ews = ews[!is.na(ews$cases),]# Remove days with NA values
-ews$Date <- as.Date( ews$date , format = "%d/%m/%Y") # Change format of date
+ews$date <- as.Date( ews$date , format = "%d/%m/%Y") # Change format of date
 ews$time <- lubridate::decimal_date(ews$date) # Add column for decimal date
 ews$wday <- lubridate::wday( ews$date ) # Add column for day of week
+#ews$cases <- -ews$cases # because lower Ct value means higher viral load
 
 # 3 positivity rates
 
 # TEMPORARILY use shifted case/hospitalisation data as leading indicator for testing
 dat_df_20 <- dat_df
 dat_df_30 <- dat_df
+
+# 4 Behavioural data
 
 #dat_df_10 <- c(dat_df[-(seq(10))], rep(NA, 10))
 shift <- function(x, n){
@@ -96,7 +99,8 @@ rm(dat_df_30)
 
 #**Could do a sensitivity analysis for dates, by k and perhaps other parameters**
 wave_reset_ix_list <- wave_reset_derivative_method( ews, dat_type) # dat_df, dat_type )
-message( "Wave reset dates are: ",dat_df$date[wave_reset_ix_list])
+wave_reset_dates <- ews$date[ wave_reset_ix_list ] 
+message( "Wave reset dates are: ",ews$date[wave_reset_ix_list])
 
 # Manual wave reset dates
 manual_wave_reset = which(dat_df$date %in% as.Date(c("2020-08-8","2020-11-28","2021-05-06","2021-11-20","2022-02-20")))
@@ -138,12 +142,12 @@ expanding_window_start = 1
 # Loop through expanding (and resetting) time window(s)
 for (i in 1:dim(ews)[1]){
   
-  #' Check if the current wave of cases/hospitalisations has 'ended' and the 
+  #' Check if the current wave of leading indicator data has 'ended' and the 
   #' expanding time window needs to be reset
   if ( length( ews$date[i-1] ) == 0 ) {
     expanding_window_start = expanding_window_start
   } else {
-    if ( ews$date[i-1] %in% dat_df$date[wave_reset_ix_list] ){
+    if ( ews$date[i-1] %in% wave_reset_dates ){
       expanding_window_start = i
     }
   }
@@ -171,9 +175,13 @@ for (i in 1:dim(ews)[1]){
   s <- asbio::skew(ews$cases[expanding_window_start:expanding_window_end]) # Alternative methods of calculating skewness: s <- prettyR::skew(ews$cases[1:expanding_window_end])$population # Returns same as asbio::skew() #s <- skewness$population(ews$cases[1:expanding_window_end])
   if( is.nan(s) || (length(s) == 0) ) { s = NA }
   s_list <- c( s_list , s )
-  s_mean <- Reduce("+", na.exclude(s_list[expanding_window_start:expanding_window_end])) / (length(na.exclude(s_list[expanding_window_start:expanding_window_end])))
-  s_st_dev <- sd(na.exclude(s_list[expanding_window_start:expanding_window_end]))
-  s_normalised <- (s - s_mean) / sd(na.exclude(s_list[expanding_window_start:expanding_window_end]))
+  if (length(s_list) > 0 ){
+    s_df = data.frame(s_list[expanding_window_start:expanding_window_end])
+    s_list_adj = s_df[Reduce('&', lapply(s_df, is.finite)),]
+  }
+  s_mean <- Reduce("+", s_list_adj) / (length(s_list_adj))
+  s_st_dev <- sd(s_list_adj)
+  s_normalised <- (s - s_mean) / s_st_dev
   if (length(s_normalised) == 0) { s_normalised = NA }
   s_normalised_list <- c( s_normalised_list , s_normalised )
   
@@ -190,15 +198,15 @@ for (i in 1:dim(ews)[1]){
     #' unique data points, so if there is an error then move on to next
     #' iteration in For loop.
     ews_gam_test <- try( gam_fitting(  ews[ expanding_window_start : expanding_window_end ]
-                                   , GAM_smooth_function = "cr"
-                                   , deg_free_k = min(c(window_size-5,50))) #**CHECK THIS K**
+                                     , GAM_smooth_function = "cr"
+                                     , deg_free_k = min(c(window_size-5,50))) #**CHECK THIS K**
                      , silent = TRUE )
-    ifelse ( class( ews_gam_test ) %in% 'try-error' , auto_cor_f_normalised = "Error", "continue" )
+    auto_cor_f_normalised = ifelse ( class( ews_gam_test[1] ) %in% 'list', 999, "Error" ) #'try-error' , "Error", NULL )
     
-    if ( length( auto_cor_f_normalised ) != "Error" ){
-    ews_gam <- gam_fitting(ews[expanding_window_start:expanding_window_end]
-                     , GAM_smooth_function = "cr"
-                     , deg_free_k = min(c(window_size-5,50)))
+    if ( auto_cor_f_normalised != "Error" ){
+      ews_gam <- ews_gam_test  # gam_fitting( ews[ expanding_window_start : expanding_window_end ]
+                              #              , GAM_smooth_function = "cr"
+                              #              , deg_free_k = min( c( window_size - 5 , 50 ) ) )
       # Display information for checking model quality and summary data
       #par(mfrow=c(2,2))
       #gam.check(ews_gam)
@@ -212,7 +220,10 @@ for (i in 1:dim(ews)[1]){
       auto_cor_f_normalised <- (auto_cor_f - auto_cor_f_mean) / sd(na.exclude(auto_cor_f_list[expanding_window_start:expanding_window_end]))
     }
     
-    if (length(auto_cor_f_normalised) == 0 || auto_cor_f_normalised == "Error" ) { auto_cor_f_normalised = NA }
+    if (length(auto_cor_f_normalised) == 0 ||
+        auto_cor_f_normalised == "Error" ||
+        auto_cor_f_normalised == 999 ||
+        is.na(auto_cor_f_normalised) ) { auto_cor_f_normalised = NA }
   
   } else { auto_cor_f_normalised = NA }
   
@@ -309,7 +320,11 @@ for (i in 1:dim(ews)[1]){
     
   }
   
-  message(i," ",expanding_window_start,":",expanding_window_end," ")#, st_dev_signal_list_sum)
+  #message(i," ",expanding_window_start,":",expanding_window_end," "
+  #        ," Skewness= ",round(s,1)
+  #        ," mean of skew= ",round(s_mean,1)
+  #        ," StDev of skew= ",round(s_st_dev,1)
+  #        ," normalised= ",round(s_normalised,1))#, st_dev_signal_list_sum)
   
   #' Record (binary) signals in time series lists
   st_dev_signal_list <- c( st_dev_signal_list, st_dev_signal )
@@ -330,6 +345,17 @@ for (i in 1:dim(ews)[1]){
   ews_comp_sd_s_signal_ix <- which(ews_comp_sd_s_signal_list > 0)
   ews_comp_sd_acf_signal_ix <- which(ews_comp_sd_acf_signal_list > 0)
   ews_comp_s_acf_signal_ix <- which(ews_comp_s_acf_signal_list > 0)
+  #' Convert to indices for dat_df, which may have a different number of data points
+  #' and so different dates for each index
+  st_dev_signal_ix_dat <- which(dat_df$date %in% ews$date[st_dev_signal_ix])
+  s_signal_ix_dat <- which(dat_df$date %in% ews$date[s_signal_ix])
+  s_signal_ix_dat <- which(dat_df$date %in% ews$date[s_signal_ix])
+  auto_cor_f_signal_ix_dat <- which(dat_df$date %in% ews$date[auto_cor_f_signal_ix])
+  
+  ews_comp_sd_s_acf_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_sd_s_acf_signal_ix])
+  ews_comp_sd_s_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_sd_s_signal_ix])
+  ews_comp_sd_acf_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_sd_acf_signal_ix])
+  ews_comp_s_acf_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_s_acf_signal_ix])
   
   ######################################
   #' Plot data
@@ -339,16 +365,22 @@ for (i in 1:dim(ews)[1]){
     #message("chart 3: x length ",length(ews$date[1:expanding_window_end])," and y length ",length(s_normalised_list))
     #message("chart 4: x length ",length(ews$date[1:expanding_window_end])," and y length ",length(auto_cor_f_normalised_list))
     
+    #' As the leading and lagging data don't necessarily have data on the same dates
+    #' it is necessary to calculate the different plot ranges
+    dat_plot_range_end <- which(dat_df$date == ews$date[expanding_window_end])
+    ews_plot_range_end <- expanding_window_end
+    wave_reset_ix_list_dat <- which(dat_df$date %in% ews$date[wave_reset_ix_list])
+    
     par(mfrow=c(3,1))
     #' Hospitalisations/cases with wave reset points marked in red
-    plot(dat_df$date[1:expanding_window_end]
-         , dat_df$cases[1:expanding_window_end]
+    plot(dat_df$date[1:dat_plot_range_end] #expanding_window_end]
+         , dat_df$cases[1:dat_plot_range_end] #expanding_window_end]
          , xlab="Date"
          , ylab=c("Covid-19",dat_type)
          , xlim=c(ews$date[1],ews$date[length(ews$date)])
          , typ = "l")
     lines(ews$date[1:expanding_window_end]
-         , ews$cases[1:expanding_window_end]
+         , ews$cases[ 1:expanding_window_end ] * max( dat_df$cases ) / max( ews$cases )
          , xlab="Date"
          , ylab=c("Covid-19",dat_type)
          , xlim=c(ews$date[1],ews$date[length(ews$date)])
@@ -359,12 +391,12 @@ for (i in 1:dim(ews)[1]){
     #      , GAM_hosp$fitted.values
     #      , col="blue"
     #      , typ="l" )
-    points(dat_df$date[ wave_reset_ix_list ]
+    points(dat_df$date[ wave_reset_ix_list_dat ]
            , ews$cases[ wave_reset_ix_list ]
            , col = "red"
            , cex = 3)
-    for ( r in 1:length(wave_reset_ix_list)){
-      abline(v = dat_df$date[wave_reset_ix_list[r]], lty = 2)
+    for ( r in 1:length(wave_reset_ix_list_dat)){
+      abline(v = dat_df$date[wave_reset_ix_list_dat[r]], lty = 2)
     }
     legend( "topright"
             , c( dat_type , "leading indicator" , "wave reset (leading indicator", "EWS")
@@ -372,13 +404,13 @@ for (i in 1:dim(ews)[1]){
             , cex = 1
             , lty = c(1,1,NA,NA)
             , pch = c(NA,NA,1,16))
-    points(dat_df$date[st_dev_signal_ix],replicate(length(st_dev_signal_ix),10),pch = 16,col="red")
-    points(dat_df$date[s_signal_ix],replicate(length(s_signal_ix),10),pch = 16,col="blue")
-    points(dat_df$date[auto_cor_f_signal_ix],replicate(length(auto_cor_f_signal_ix),10),pch = 16,col="green")
-    points(dat_df$date[ews_comp_sd_s_acf_signal_ix],replicate(length(ews_comp_sd_s_acf_signal_ix),10),pch = 16,col="brown1")
-    points(dat_df$date[ews_comp_sd_s_signal_ix],replicate(length(ews_comp_sd_s_signal_ix),10),pch = 16,col="cadetblue")
-    points(dat_df$date[ews_comp_sd_acf_signal_ix],replicate(length(ews_comp_sd_acf_signal_ix),10),pch = 16,col="darkviolet")
-    points(dat_df$date[ews_comp_s_acf_signal_ix],replicate(length(ews_comp_s_acf_signal_ix ),10),pch = 16,col="orange")
+    points(dat_df$date[st_dev_signal_ix_dat],replicate(length(st_dev_signal_ix_dat),10),pch = 16,col="red")
+    points(dat_df$date[s_signal_ix_dat],replicate(length(s_signal_ix_dat),10),pch = 16,col="blue")
+    points(dat_df$date[auto_cor_f_signal_ix_dat],replicate(length(auto_cor_f_signal_ix_dat),10),pch = 16,col="green")
+    points(dat_df$date[ews_comp_sd_s_acf_signal_ix_dat],replicate(length(ews_comp_sd_s_acf_signal_ix_dat),10),pch = 16,col="brown1")
+    points(dat_df$date[ews_comp_sd_s_signal_ix_dat],replicate(length(ews_comp_sd_s_signal_ix_dat),10),pch = 16,col="cadetblue")
+    points(dat_df$date[ews_comp_sd_acf_signal_ix_dat],replicate(length(ews_comp_sd_acf_signal_ix_dat),10),pch = 16,col="darkviolet")
+    points(dat_df$date[ews_comp_s_acf_signal_ix_dat],replicate(length(ews_comp_s_acf_signal_ix_dat),10),pch = 16,col="orange")
      
     
     
@@ -399,8 +431,8 @@ for (i in 1:dim(ews)[1]){
         , typ = "l")
     lines(  ews$date
           , replicate( length( ews$date ) , 2 ) )
-    for ( r in 1:length(wave_reset_ix_list)){
-      abline(v = dat_df$date[wave_reset_ix_list[r]], lty = 2)
+    for ( r in 1:length(wave_reset_ix_list_dat)){
+      abline(v = dat_df$date[wave_reset_ix_list_dat[r]], lty = 2)
     }
     legend( "bottomright"
            , c( "St.Dev." , "Skew" , "ACF")
@@ -451,8 +483,8 @@ for (i in 1:dim(ews)[1]){
          , typ = "l")
     lines(  ews$date
             , replicate( length( ews$date ) , 2 ) )
-    for ( r in 1:length(wave_reset_ix_list)){
-      abline(v = dat_df$date[wave_reset_ix_list[r]], lty = 2)
+    for ( r in 1:length(wave_reset_ix_list_dat)){
+      abline(v = dat_df$date[wave_reset_ix_list_dat[r]], lty = 2)
     }
     legend( "bottomright"
             , c( "SD+Skew+ACF" , "SD+Skew" , "SD+ACF", "Skew+ACF")

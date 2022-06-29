@@ -36,3 +36,12 @@ wave_define_overlay.R
 
 wave_define_hosp_growth_overlay.R
 - As above but focused on hospitalisation data and varying the growth threshold
+
+wave_reset_derivative_method.R
+- Calculates date for end of Covid-19 wave in order to define a reset date for calculation of early warning signals (EWS). 
+- The aim is to avoid previous waves impacting the early warning signal for future waves.
+- Better to run on the leading indicator data to produce a reset date as this data is used to calculate the EWS.
+	If it is run on the case/hospitalisation data then the reset date is likely to be too close to the wave start date for
+	a meaningful EWS to be generated.
+- Based on the method described in O'Brien & Clements (2021) DOI: 10.1098/rsbl.2021.0487 and 
+	in supplementary methods

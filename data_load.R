@@ -1,7 +1,7 @@
 #' Function to load data for Covid-19 cases or hospitalisations
 #' and to reformat
 #' @param folder Location of data file.
-#' @param filename Name of file to beloaded
+#' @param filename Name of file to be loaded
 #' @param dat_type Type of data: Covid-19 "cases" or "hospitalisations" 
 #' @return Dataframe with reformatted data
 

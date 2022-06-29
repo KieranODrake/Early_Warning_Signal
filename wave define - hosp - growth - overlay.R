@@ -38,10 +38,18 @@ wave_define_df <- data.frame( "Data_type" = NA#c()
                               , "Derivative_significance_level" = NA#c()
                               , "Growth_threshold" = NA#c()
                               , "Number_of_waves" = NA#c()
+                              , "Number_of_waves_adjusted" = NA#c()
 )
 for (i in 1:100){
   j = i
   col_name = paste("wave",j,"start")
+  additional_col = data.frame(placeholder_name = as.Date(NA))
+  names(additional_col) <- col_name
+  wave_define_df = cbind(wave_define_df,additional_col[1])
+}
+for (i in 1:100){
+  j = i
+  col_name = paste("wave",j,"start_adj")
   additional_col = data.frame(placeholder_name = as.Date(NA))
   names(additional_col) <- col_name
   wave_define_df = cbind(wave_define_df,additional_col[1])
@@ -57,8 +65,8 @@ for (r in 1:100){
 ################################
 
 # Define generalised additive model (GAM) inputs
-GAM_smooth_function = "tp"
-deg_free_k = 150 # Degrees of freedom for GAM model with regard to date
+GAM_smooth_function = "ps"
+deg_free_k = 170 # Degrees of freedom for GAM model with regard to date
 
 # Calculate generalised additive model (GAM)
 cases_df = hosp_df
@@ -71,7 +79,7 @@ summary(m)
 # Return model from using growth of log(smoothed cases) method to identify wave dates
 #growth_threshold = 0.030
 counter = 0
-gsf_list = c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc","mrf")
+gsf_list = c("tp","ts","ds","ps","cp","re","gp","cr","cs","cc") #,"mrf")
 k_list = seq(50,300,10)
 gt_list = seq(0,0.1,0.01)
 number_of_models = length(gsf_list) * length(k_list) * length(gt_list)

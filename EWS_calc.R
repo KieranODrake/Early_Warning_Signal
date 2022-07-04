@@ -54,13 +54,31 @@ folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Wa
 filename <- "Ct_p2_mean_df.csv"
 # Or 
 filename <- "Ct_p2_median_df.csv"
+# test
 setwd( folder )
 ews = fread( filename )
 # Select data to use for EWS calculation 
-ews = ews[,c("Date","O_Ct")] #O_Ct, N-Ct, S-Ct, Control_Ct, Ct_min, Ct_mean, min_skew, mean_skew, min_stdev, mean_stdev
-dat_type = "O-gene Ct values"
+ews = ews[,c("Date","mean_skew")] #O_Ct, N-Ct, S-Ct, Control_Ct, Ct_min, Ct_mean, min_skew, mean_skew, min_stdev, mean_stdev
+#dat_type = "O-gene Ct values"
 colnames(ews) <- c("date","cases") # Rename columns
 ews = ews[!is.na(ews$cases),]# Remove days with NA values
+ews = ews[Reduce('&', lapply(ews, is.finite)),] # Remove days with Inf values
+ews$cases = 1/ews$cases
+ews$date <- as.Date( ews$date , format = "%d/%m/%Y") # Change format of date
+ews$time <- lubridate::decimal_date(ews$date) # Add column for decimal date
+ews$wday <- lubridate::wday( ews$date ) # Add column for day of week
+#ews$cases <- -ews$cases # because lower Ct value means higher viral load
+
+#viral load test
+# test
+filename <- "viral_load_test.csv"
+setwd( folder )
+ews = fread( filename )
+# Select data to use for EWS calculation 
+ews = ews[,c("Date","viral load proxy")] #O_Ct, N-Ct, S-Ct, Control_Ct, Ct_min, Ct_mean, min_skew, mean_skew, min_stdev, mean_stdev
+colnames(ews) <- c("date","cases") # Rename columns
+ews = ews[!is.na(ews$cases),]# Remove days with NA values
+ews$cases = -ews$cases
 ews$date <- as.Date( ews$date , format = "%d/%m/%Y") # Change format of date
 ews$time <- lubridate::decimal_date(ews$date) # Add column for decimal date
 ews$wday <- lubridate::wday( ews$date ) # Add column for day of week
@@ -69,6 +87,7 @@ ews$wday <- lubridate::wday( ews$date ) # Add column for day of week
 # 3 positivity rates
 
 # TEMPORARILY use shifted case/hospitalisation data as leading indicator for testing
+dat_df_10 <- dat_df
 dat_df_20 <- dat_df
 dat_df_30 <- dat_df
 
@@ -78,9 +97,13 @@ dat_df_30 <- dat_df
 shift <- function(x, n){
   c(x[-(seq(n))], rep(NA, n))
 }
+dat_df_10$cases <- shift(dat_df_10$cases, 10)
 dat_df_20$cases <- shift(dat_df_20$cases, 20)
 dat_df_30$cases <- shift(dat_df_30$cases, 30)
 
+ews = dat_df
+ews <- dat_df_10
+rm(dat_df_10)
 ews <- dat_df_20
 rm(dat_df_20)
 ews <- dat_df_30
@@ -356,7 +379,7 @@ for (i in 1:dim(ews)[1]){
   ews_comp_sd_s_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_sd_s_signal_ix])
   ews_comp_sd_acf_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_sd_acf_signal_ix])
   ews_comp_s_acf_signal_ix_dat <- which(dat_df$date %in% ews$date[ews_comp_s_acf_signal_ix])
-  
+}
   ######################################
   #' Plot data
   if (i > min_window+10){
@@ -529,7 +552,7 @@ for (i in 1:dim(ews)[1]){
             , col = "orange"
             , cex = 1)
     
-    }
+    
 }
 
 # Record EWS dates in dataframe
@@ -541,7 +564,7 @@ l <- tibble::lst(  "Standard Deviation"         = ews$date[ st_dev_signal_ix ]
                    , "Composite: Skew+ACF"        = ews$date[ ews_comp_s_acf_signal_ix ]
                    , "Composite: StDev+ACF"       = ews$date[ ews_comp_sd_acf_signal_ix ]
                 )
-ews_dates = data.frame(lapply(l, `length<-`, max(lengths(l))))
+ews_dates_mean_skew = data.frame(lapply(l, `length<-`, max(lengths(l))))
 
 #########################################
 # Plot 
@@ -602,3 +625,107 @@ points(ews$date[auto_cor_f_signal_ix]
 lines(ews$date
       , replicate(length(ews$date),2)
       , col="grey")
+
+######################################
+# Plotting cases at top and signals for variety of leading indicators below
+# Define data sets to plot
+leading_indicator_dates = list(hosp = ews_dates_hosp
+                               ,hosp10 = ews_dates_hosp10
+                               ,hosp20 = ews_dates_hosp20
+                               ,hosp30 = ews_dates_hosp30
+                               ,Control_Ct = ews_dates_Control_Ct
+                               ,Ngene = ews_dates_Ngene
+                               ,Ogene = ews_dates_Ogene
+                               ,Sgene = ews_dates_Sgene
+                               ,mean_Ct = ews_dates_mean_Ct
+                               ,min_Ct = ews_dates_min_Ct
+                               ,min_stdev = ews_dates_min_stdev
+                               ,mean_stdev = ews_dates_mean_stdev
+                               ,min_skew = ews_dates_min_skew
+                               ,meann_skew = ews_dates_mean_skew)
+leading_indicator_names = c("Hospitalisations"
+                            ,"Hospitalisations -10 days"
+                            ,"Hospitalisations -20 days"
+                            ,"Hospitalisations -30 days"
+                            ,"Ct control"
+                            ,"Ct N gene"
+                            ,"Ct O gene"
+                            ,"Ct S gene"
+                            ,"Ct mean of 3 genes"
+                            ,"Ct min of 3 genes"
+                            ,"Ct minimum of St.Dev. of 3 genes"
+                            ,"Ct mean of St.Dev. of 3 genes"
+                            ,"Ct minimum of skewness of 3 genes"
+                            ,"Ct mean of skewness of 3 genes")
+plot_colour = c("red" , "blue" , "green","brown1" , "cadetblue" , "darkviolet", "orange" )
+wave_reset_dates_lead_ind = list( hosp = wave_reset_hosp
+                                  , hosp10 = wave_reset_hosp10
+                                  , hosp20 = wave_reset_hosp20
+                                  , hosp30 = wave_reset_hosp30
+                                  , control_Ct = wave_reset_Control_Ct
+                                  , Ngene = wave_reset_Ngene_Ct
+                                  , Ogene = wave_reset_Ogene_Ct
+                                  , Sgene = wave_reset_Sgene_Ct
+                                  , mean_Ct = wave_reset_mean_Ct
+                                  , min_Ct = wave_reset_min_Ct
+                                  , min_stdev = wave_reset_min_stdev
+                                  , mean_stdev = wave_reset_mean_stdev
+                                  , min_skew = wave_reset_min_skew
+                                  , mean_skew = wave_reset_mean_skew)
+
+par(mfrow=c(1,1))
+layout(matrix(c(1,1,1,1,1,1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15), nrow = 21, ncol = 1, byrow = TRUE))
+
+par(mar=c(5,4,4,2)) #margins: bottom, left, top, right
+
+plot(dat_df$date
+     , dat_df$cases
+     , xlab="Date"
+     , ylab=c("Covid-19",dat_type)
+     ,las = 2
+     , typ = "l")
+points(dat_df$date[ which(dat_df$date %in% wave_start_dates) ]
+       , dat_df$cases[ which(dat_df$date %in% wave_start_dates) ]
+       , col = "red"
+       , cex = 3)
+legend( "topright"
+        , c( dat_type , "wave start date","St.Dev." , "Skew" , "ACF","SD+Skew+ACF" , "SD+Skew" , "SD+ACF", "Skew+ACF", "wave reset dates")
+        , col = c( "black" , "red","red" , "blue" , "green","brown1" , "cadetblue" , "darkviolet", "orange" ,"black")
+        , cex = 1
+        , lty = c(1,NA,NA,NA,NA,NA,NA,NA,NA,2)
+        , pch = c(NA,1,16,16,16,16,16,16,16,NA)
+        , ncol = 3)
+
+par(mar=c(1,4,1,2)) #margins: bottom, left, top, right
+
+for (i in 1:length(leading_indicator_dates)){ # cycles through leading indicators
+  
+  temp_df = data.frame( leading_indicator_dates[ i ] )
+  
+  plot(temp_df[,1]
+       , replicate ( length( temp_df[,1] ), 1)
+        , xlim =c(min(dat_df$date),max(dat_df$date))
+       , ylim = c(0,8)
+       , xlab="" #Date" 
+       , ylab="" # arbitrary value to separate the plots of the different statistics
+       , xaxt = "n"
+       , yaxt = "n"
+       , col = plot_colour[1]
+       , pch = 16
+       )
+  mtext( paste(leading_indicator_names[ i ]) , adj = 0 , padj = 0 ) #https://stackoverflow.com/questions/70155924/how-to-rotate-ylab-in-basic-plot-r
+  
+  temp_reset_dates = data.frame(wave_reset_dates_lead_ind[ i ])
+  
+  for ( r in 1:nrow(temp_reset_dates)){
+    abline(v = temp_reset_dates[r,], lty = 2)
+  }
+  for (j in 2:7){ #7 different types of early warning signal calculated per leading indicator data type
+    temp2_df = temp_df[ j ]
+    points( temp2_df[,1]
+          , replicate ( nrow( temp2_df ), j ) 
+          , pch = 16
+          , col = plot_colour[ j ]
+          )
+  }
+}

@@ -21,15 +21,23 @@ wave_start_dates <- c( as.Date("")           #' 1 Wuhan
                       ,as.Date("2022-02-21") #' 8 Omicron
                       ,as.Date("")           #' 9 Omicron
                       )
-#' EWS dates
+#' Load EWS dates (choose type of leading indicator to work with)
+#' 1.1 - Test - shifted hospitalisation data
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+ews_dates <- readRDS( "test_hosp_shift_EWS_dates.RData" )
+ews_names <- readRDS( "test_hosp_shift_EWS_names.RData" )
+wave_reset_dates <- readRDS( "test_hosp_shift_wave_reset_dates.RData")
+
+#' 1,2 - Cluster logistic growth rate variance
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_08/Analysis')
 ews_dates <- readRDS( "lgrv_EWS_dates.RData" ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
 ews_names <- readRDS( "lgrv_EWS_names.RData" )
 wave_reset_dates <- readRDS( "lgrv_wave_reset_dates.RData" ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
+
 #' Manually determined start and end dates for waves to enable EWS dates to be assigned to a wave
 # Manually define wave date bands 
 # (semi-arbitrary earliest possible start date for wave i.e. just after previous wave peak) 
-#'**1**
+#'**1 - not overlapping so miss some EWS dates and not assigned to a wave**
 wave_bands_start <- c(as.Date("2020-01-01"), # 1  Wuhan
                       as.Date("2020-04-23"), # 2  Alpha
                       as.Date("2020-11-14"), # 3  Alpha
@@ -90,10 +98,27 @@ rm( wave_bands_start , wave_bands_end, wave_start_dates)
 #' Lead/lag time (in days) = Wave start dates - EWS dates. 
 #' Assumption must be made as to which wave the EWS date is for.
 
-#' Convert ews_dates to an array. Dim = 32 leading indicators, 9 waves and 7 
+#########################################
+#' Convert ews_dates to an array. 
+#' 
+#' 1 - Test - hopilisations shifted
+#' Dim = 32 leading indicators, 9 waves and 7 
 #' leading indicator statistics. Data in the array is the EWS date 
-ews_dates_array <- array( data = NA, dim = c( 32 , 9 , 7 ))
-ews_diff_array <- array( data = NA, dim = c( 32 , 9 , 7 ))
+li_n = 4 #' Number of leading indicators analysing
+w_n = 9 #' Number of waves
+s_n = 7 #' Number of statistics calculated for leading indicators
+
+#' 2 - Cluster logistic growth rate variance
+#' Dim = 32 leading indicators, 9 waves and 7 
+#' leading indicator statistics. Data in the array is the EWS date 
+li_n = 32 #' Number of leading indicators analysing
+w_n = 9 #' Number of waves
+s_n = 7 #' Number of statistics calculated for leading indicators
+
+#' Below can be used for all leading indicators
+ews_dates_array <- array( data = NA, dim = c( li_n , w_n , s_n ))
+ews_diff_array <- array( data = NA, dim = c( li_n , w_n , s_n ))
+
 multi_date_log_list <- list()
 multi_date_log = c()
 number_counter = 0
@@ -101,7 +126,7 @@ number_counter_2 = 0
 
 for ( lead_ind_i in 1 : length( ews_dates ) ) {
   
-  for ( wave_j in 1 : 9 ){
+  for ( wave_j in 1 : w_n ){
     band_start <- wave_bands$band_start[ wave_j ]
     band_end   <- wave_bands$band_end[ wave_j ]
     
@@ -112,18 +137,18 @@ for ( lead_ind_i in 1 : length( ews_dates ) ) {
         
         if ( !is.na( d ) ){
           if ( ( d >= band_start ) && ( d <= band_end ) ){ #' Check if EWS date is within the wave band
-            #number_counter = number_counter + 1
-            #message( number_counter )
+            number_counter = number_counter + 1
+            message( number_counter )
             
             if ( is.na( ews_dates_array[ lead_ind_i , wave_j , stat_k ] ) ){
-              #number_counter_2 = number_counter_2 + 1
-              #message(  number_counter_2 )
-              if (number_counter_2 == 18){
+              number_counter_2 = number_counter_2 + 1
+              message(  number_counter_2 )
+              if (number_counter_2 == 21){
                 message( paste( lead_ind_i , wave_j , stat_k ) )
               }
               ews_dates_array[ lead_ind_i , wave_j , stat_k ] = as.Date( d , origin = "1970-01-01" ) 
               ews_diff_array[ lead_ind_i , wave_j , stat_k ] = wave_bands$wave_start[ wave_j ] - d
-              #message( paste( number_counter_2 , sum( !is.na( ews_dates_array[  , , ] )) ) )
+              message( paste( number_counter_2 , sum( !is.na( ews_dates_array[  , , ] )) ) )
             } else {
               multi_date_log <- c( lead_ind_i , wave_j , stat_k )
               multi_date_log_list <- rbind( multi_date_log_list , multi_date_log )
@@ -135,8 +160,23 @@ for ( lead_ind_i in 1 : length( ews_dates ) ) {
   }
 }
 
-#' Test
-#' Dim = 32 leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Test that array conversion has worked
+
+#' 1 - Test leading indicator - hospitalisations shifted
+#'#' Dim = 32 leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+as.Date(ews_dates_array[ 1 , 2 , 1 ],origin="1970-01-01")
+ews_dates_array[ 1 , 2 , 1 ] == ews_dates[[1]][ 1 , 1]
+as.Date(ews_dates_array[ 1 , 8 , 1 ],origin="1970-01-01")
+ews_dates_array[ 1 , 8 , 1 ] == ews_dates[[1]][ 4 , 1]
+as.Date(ews_dates_array[ 3 , 4 , 5 ],origin="1970-01-01")
+ews_dates_array[ 3 , 4 , 5 ] == ews_dates[[3]][ 2 , 5]
+
+#' Note one hospitalisation shifted (n-10) date is not transferred to array because there are two dates in the same wave band
+#' and one date does not have a time lead/lag because it is in the wave 1 band and there is no start date for wave 1
+
+#' 2 - Cluster logistic growth rates as leading indicator
+#'#' Dim = 32 leading indicators, 9 waves and 7 leading indicator statistics. 
 #' Data in the array is the EWS date 
 as.Date(ews_dates_array[ 1 , 4 , 1 ],origin="1970-01-01")
 ews_dates_array[ 1 , 4 , 1 ] == ews_dates[[1]][ 1 , 1]
@@ -145,6 +185,8 @@ ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[3]][ 2 , 3]
 as.Date(ews_dates_array[ 20 , 4 , 3 ],origin="1970-01-01")
 ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[3]][ 2 , 3]
 
+
+#' Array Test below applies to all leading indicators
 #'Method assumes only one date per wave per statistic per leading indicator, so
 #'check that all dates captured in dates array...
 total_ews_dates <- 0
@@ -153,7 +195,7 @@ for (counter in 1 : length( ews_dates ) ) {
   total_ews_dates <- total_ews_dates + temp
 }
 message( paste( "A total of " , total_ews_dates , " EWS dates have been identified.") )
-         
+
 total_ews_dates_in_array <- sum( !is.na( ews_dates_array[  , , ] ))
 message( paste( "A total of " , total_ews_dates_in_array , " EWS dates have been transferred to the array.") )
 
@@ -163,10 +205,10 @@ if ( total_ews_dates == total_ews_dates_in_array ){
   message( paste( "NOT all EWS dates have been transferred to the array. There are "
                   , total_ews_dates - total_ews_dates_in_array, " out of ", total_ews_dates
                   , " dates missing. Check list of leading indicators." ) )
-  for (counter in 1 : length( ews_dates ) ) {
-    temp <- sum( !is.na( ews_dates[[ counter ]] ))
-    total_ews_dates <- total_ews_dates + temp
-  }
+  #for (counter in 1 : length( ews_dates ) ) {
+  #  temp <- sum( !is.na( ews_dates[[ counter ]] ))
+  #  total_ews_dates <- total_ews_dates + temp
+  #}
   
 }
 #' ...and in diff array
@@ -179,17 +221,25 @@ if ( total_ews_dates == total_ews_in_diff_array ){
   message( paste( "NOT all EWS dates have been used to calculate a lead/lag time. There are "
                   , total_ews_dates - total_ews_in_diff_array, " out of ", total_ews_dates
                   , " dates missing. Check list of leading indicators." ) )
-  for (counter in 1 : length( ews_dates ) ) {
-    temp <- sum( !is.na( ews_dates[[ counter ]] ))
-    total_ews_dates <- total_ews_dates + temp
-  }
+  #for (counter in 1 : length( ews_dates ) ) {
+  #  temp <- sum( !is.na( ews_dates[[ counter ]] ))
+  #  total_ews_dates <- total_ews_dates + temp
+  #}
   
 }
 
 ################################################################################
 #' 2 - Plot data with time on the HORIZONTAL
+
+#' 2.1 - Test - hospitalisation data shifted
+lead_ind_start = 1 #' Change to plot desired leading indicators
+lead_ind_end = 4 #' Change to plot desired leading indicators
+
+#' 2.2 - Cluster logistic growth rates
 lead_ind_start = 24#24 #1 #8 #17 #24 #' Change to plot desired leading indicators
 lead_ind_end = 32#32 #7 #16 #23 #32 #' Change to plot desired leading indicators
+
+#' Plot applies to all leading indicators
 waves_to_plot = c(2,3,4,5,6,7,8) #' Change to plot desired waves
 
 par( mfrow = c( 9 , length( waves_to_plot ) ) ) #' 9 leading indicator types on the vertical and 7 waves on the horizontal
@@ -281,7 +331,7 @@ for ( r in 1 : nrow( wave_bands ) ){
 #' Add wave start dates
 sd = lubridate::decimal_date( wave_bands$wave_start )
 points(   lubridate::decimal_date( wave_bands$wave_start )
-        , dat_df$cases[ match( sd , dat_df$time ) ]
-        , col="red"
-        , cex = 3
-        )
+          , dat_df$cases[ match( sd , dat_df$time ) ]
+          , col="red"
+          , cex = 3
+)

@@ -12,9 +12,10 @@ data_2022-May-09 - UK Covid-19 cases by sample date.csv
 UK Covid-19 hospitalisations (https://coronavirus.data.gov.uk/details/healthcare)
 data_2022-May-09 - UK Covid-19 hospital admissions.csv
 
-Pillar 2 PCR cycle threshold (Ct) values
-Pillar 2 PCR test positivity rates
-Behavioural data
+SARS-CoV-2 cluster growth rate variance calculated in 'Transmission Fitness Polymorphism (TFP) Scanner'
+SARS-CoV-2 Pillar 2 PCR cycle threshold (Ct) values
+SARS-CoV-2 Pillar 2 PCR test positivity rates
+SARS-CoV-2 Behavioural data
 
 **Scripts**
 
@@ -23,6 +24,9 @@ data_load.R
 
 EWS_calc.R
 - Calculation of early warning signals for Covid-19 waves using leading indicator data.
+
+EWS_plot.R
+- Convert EWS list to array and plots EWS lead/lag times.
 
 gam_fitting.R
 - Used to fit generalised additive model (GAM) to Covid-19 cases or hospitalisations

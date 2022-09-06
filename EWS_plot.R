@@ -27,12 +27,26 @@ setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warnin
 ews_dates <- readRDS( "test_hosp_shift_EWS_dates.RData" )
 ews_names <- readRDS( "test_hosp_shift_EWS_names.RData" )
 wave_reset_dates <- readRDS( "test_hosp_shift_wave_reset_dates.RData")
-
-#' 1,2 - Cluster logistic growth rate variance
+#' 1.2 - Cluster logistic growth rate variance
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_08/Analysis')
 ews_dates <- readRDS( "lgrv_EWS_dates.RData" ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
 ews_names <- readRDS( "lgrv_EWS_names.RData" )
 wave_reset_dates <- readRDS( "lgrv_wave_reset_dates.RData" ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
+#' 1.3 - PCR cycle threshold (Ct) values EWS
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+ews_dates <- readRDS( "Ct_EWS_dates.RData")
+ews_names <- readRDS( "Ct_EWS_names.RData")
+wave_reset_dates <- readRDS( "Ct_wave_reset_dates.RData")
+#' 1.5 - Behavioural - CoMix Survey 
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+ews_dates = readRDS( "comix_EWS_dates.RData" )
+ews_names = readRDS( "comix_EWS_names.RData" )
+wave_reset_dates = readRDS( "comix_wave_reset_dates.RData" )
+#' 1.6 - Google mobility
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+ews_dates <- readRDS( "google_mobility_EWS_dates.RData" )
+ews_names <- readRDS( "google_mobility_EWS_names.RData" )
+wave_reset_dates <- readRDS( "google_mobility_wave_reset_dates.RData" )
 
 #' Manually determined start and end dates for waves to enable EWS dates to be assigned to a wave
 # Manually define wave date bands 
@@ -101,9 +115,9 @@ rm( wave_bands_start , wave_bands_end, wave_start_dates)
 #########################################
 #' Convert ews_dates to an array. 
 #' 
-#' 1 - Test - hopilisations shifted
-#' Dim = 32 leading indicators, 9 waves and 7 
-#' leading indicator statistics. Data in the array is the EWS date 
+#' 1 - Test - hospilisations shifted
+#' Dim = li_n leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
 li_n = 4 #' Number of leading indicators analysing
 w_n = 9 #' Number of waves
 s_n = 7 #' Number of statistics calculated for leading indicators
@@ -112,6 +126,27 @@ s_n = 7 #' Number of statistics calculated for leading indicators
 #' Dim = 32 leading indicators, 9 waves and 7 
 #' leading indicator statistics. Data in the array is the EWS date 
 li_n = 32 #' Number of leading indicators analysing
+w_n = 9 #' Number of waves
+s_n = 7 #' Number of statistics calculated for leading indicators
+
+#' 3 - Ct values
+#' Dim = li_n leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+li_n = 36 #' Number of leading indicators analysing
+w_n = 9 #' Number of waves
+s_n = 7 #' Number of statistics calculated for leading indicators
+
+#' 5 - Behavioural - CoMix Survey
+#' Dim = li_n leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+li_n = 13 #' Number of leading indicators analysing
+w_n = 9 #' Number of waves
+s_n = 7 #' Number of statistics calculated for leading indicators
+
+#' 6 - Behavioural - Google mobility
+#' Dim = li_n leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+li_n = 7 #' Number of leading indicators analysing
 w_n = 9 #' Number of waves
 s_n = 7 #' Number of statistics calculated for leading indicators
 
@@ -185,6 +220,45 @@ ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[3]][ 2 , 3]
 as.Date(ews_dates_array[ 20 , 4 , 3 ],origin="1970-01-01")
 ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[3]][ 2 , 3]
 
+#' 3 - Ct values as leading indicator
+#'#' Dim = 36 leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+as.Date(ews_dates_array[ 1 , 4 , 1 ],origin="1970-01-01")
+ews_dates_array[ 1 , 4 , 1 ] == ews_dates[[1]][ 2 , 1]
+as.Date(ews_dates_array[ 5 , 7 , 7 ],origin="1970-01-01")
+ews_dates_array[ 5 , 7 , 7 ] == ews_dates[[5]][ 1 , 7]
+as.Date(ews_dates_array[ 27 , 5 , 3 ],origin="1970-01-01")
+ews_dates_array[ 27 , 5 , 3 ] == ews_dates[[27]][ 2 , 3]
+#' Note 9 EWS dates not transferred to array (possibly because there are dates 
+#' in the same wave band)and an additional EWS date does not have a time 
+#' lead/lag (possibly because it is in the wave 1 band and there is no start 
+#' date for wave 1)
+
+#' 5 - Behavioural - CoMix Survey as leading indicator
+#'#' Dim = 14 leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+as.Date(ews_dates_array[ 1 , 2 , 1 ],origin="1970-01-01")
+ews_dates_array[ 1 , 2 , 1 ] == ews_dates[[1]][ 1 , 1]
+as.Date(ews_dates_array[ 5 , 6 , 3 ],origin="1970-01-01")
+ews_dates_array[ 5 , 6 , 3 ] == ews_dates[[5]][ 1 , 3]
+as.Date(ews_dates_array[ 4 , 4 , 3 ],origin="1970-01-01")
+ews_dates_array[ 4 , 4 , 3 ] == ews_dates[[4]][ 1 , 3]
+#' All EWS dates transferred to array and all used to calculate lead/lag times
+
+#' 6 - Google mobility as leading indicator
+#'#' Dim = 7 leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+as.Date(ews_dates_array[ 1 , 4 , 1 ],origin="1970-01-01")
+ews_dates_array[ 1 , 4 , 1 ] == ews_dates[[1]][ 4 , 1]
+as.Date(ews_dates_array[ 3 , 2 , 3 ],origin="1970-01-01")
+ews_dates_array[ 3 , 2 , 3 ] == ews_dates[[3]][ 1 , 3]
+as.Date(ews_dates_array[ 3 , 3 , 3 ],origin="1970-01-01")
+ews_dates_array[ 3 , 3 , 3 ] == ews_dates[[3]][ 2 , 3]
+#' Note, six EWS dates not transferred to array (possibly because there are
+#' two dates in the same wave band) and a further 15 dates do not have a time
+#' lead/lag (possibly because they are in the wave 1 band and there is no start
+#' date for wave 1)
+
 
 #' Array Test below applies to all leading indicators
 #'Method assumes only one date per wave per statistic per leading indicator, so
@@ -236,18 +310,30 @@ lead_ind_start = 1 #' Change to plot desired leading indicators
 lead_ind_end = 4 #' Change to plot desired leading indicators
 
 #' 2.2 - Cluster logistic growth rates
-lead_ind_start = 24#24 #1 #8 #17 #24 #' Change to plot desired leading indicators
-lead_ind_end = 32#32 #7 #16 #23 #32 #' Change to plot desired leading indicators
+lead_ind_start = 24 #1 #8 #17 #24 #' Change to plot desired leading indicators
+lead_ind_end = 32 #7 #16 #23 #32 #' Change to plot desired leading indicators
+
+#' 2.3 - Ct values
+lead_ind_start = 28 #1 #10 #19 #28 #' Change to plot desired leading indicators
+lead_ind_end = 36 #9 #18 #27 #36 #' Change to plot desired leading indicators
+
+#' 2.5 - Behavioural - CoMix Survey
+lead_ind_start = 1 #1 #5  #' Change to plot desired leading indicators
+lead_ind_end = 4 #4 #13  #' Change to plot desired leading indicators
+
+#' 2.6 - Behavioural - Google mobility
+lead_ind_start = 1 #' Change to plot desired leading indicators
+lead_ind_end = 7 #' Change to plot desired leading indicators
 
 #' Plot applies to all leading indicators
 waves_to_plot = c(2,3,4,5,6,7,8) #' Change to plot desired waves
 
 par( mfrow = c( 9 , length( waves_to_plot ) ) ) #' 9 leading indicator types on the vertical and 7 waves on the horizontal
-par( mar = c( 1 , 2 , 1 , 1 ) ) #margins: bottom, left, top, right
-plot_colours = c("blue","red","black","orange","green","darkgreen","brown") 
+par( mar = c( 2 , 2 , 1.5 , 1 ) ) #margins: bottom, left, top, right
+plot_colours = c("red","blue","green","brown1","cadetblue","darkviolet","orange") 
 #x_limits = c( min( ews_diff_array , na.rm = TRUE ) , max( ews_diff_array , na.rm = TRUE) )
-x_limits = c( -plyr::round_any( max( ews_diff_array , na.rm = TRUE) , 10 , f = ceiling ) , -plyr::round_any( min( ews_diff_array , na.rm = TRUE ) , 10 , f = floor ) )#' Use negative as want to show -ve as leading and +ve as lagging
-
+#x_limits = c( -plyr::round_any( max( ews_diff_array , na.rm = TRUE) , 10 , f = ceiling ) , -plyr::round_any( min( ews_diff_array , na.rm = TRUE ) , 10 , f = floor ) )#' Use negative as want to show -ve as leading and +ve as lagging
+x_limits = c( -100 , 100 )
 
 for ( lead_ind_i in lead_ind_start : lead_ind_end ){
   for (wave_j in waves_to_plot ){  

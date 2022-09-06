@@ -87,7 +87,7 @@ filename <- "Ct_p2_median_df.csv"
 setwd( folder )
 ews = fread( filename )
 # Select data to use for EWS calculation 
-ews = ews[,c("Date","vl_max_stdev")] #O_Ct, N-Ct, S-Ct, Control_Ct, Ct_min, Ct_mean, min_skew, mean_skew, min_stdev, mean_stdev
+ews = ews[,c("Date","Ct_min_stdev")] #O_Ct, N_Ct, S_Ct, Control_Ct, Ct_min, Ct_mean, O_Ct_norm, N_Ct_norm, S_Ct_norm, O_vl, N_vl, S_vl, vl_min, vl_mean, Ct_min_skew, Ct_min_stdev, vl_max_skew, vl_max_stdev
 #dat_type = "O-gene Ct values"
 
 #viral load test
@@ -103,17 +103,56 @@ ews$cases = -ews$cases # because lower Ct value means higher viral load
 #' 4 - SARS-CoV-2 positivity rates
 
 #' 5 - Behavioural - CoMix survey
+folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Inputs/UK CoMix data 2022/CoMix data'
+filename <- "2022-03-02_bs_means_2w_open.csv"
+setwd( folder )
+ews = fread( filename )
+#' Filter data and select parameters to change
+#unique(ews$part_region)
+#unique(ews$part_age_group)
+#unique(ews$setting)
+ews = subset( ews , ews$part_region       == "All" )
+ews = subset( ews , ews$part_gender       == "All" )
+ews = subset( ews , ews$part_social_group == "All" )
+ews = subset( ews , ews$part_income       == "All" )
+ews = subset( ews , ews$part_high_risk    == "All" )
+ews = subset( ews , ews$part_work_place   == "All" )
+ews = subset( ews , ews$setting           == "All" )
+ews = subset( ews , ews$part_age_group    == "18-59" ) #"All", "0-4", "5-11", "5-17", "All-adults", "18-59", "60+", "18-29", "30-39", "40-49", "50-59", "60-69", "70+"
+ews = ews[ , c( "mid_date" , "mean" ) ]
+ews$mid_date <- as.Date( ews$mid_date , format = "%d/%m/%Y") # Change format of date
+ews = ews[ order( ews$mid_date ) , ]
+#' Because the CoMix data is weekly no leading indicator reset dates are identified
+#' Therefore need to interpolate to generate dataset of daily datapoints
+#'...
 
 #' 6 - Behavioural - Google mobility
+folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Inputs/Google Mobility'
+filename <- "Google mobility data - UK to 12 June 2022.csv"
+setwd( folder )
+ews = fread( filename )
+#' Select data to use for EWS calculation 
+#"retail_and_recreation_percent_change_from_baseline"
+#"grocery_and_pharmacy_percent_change_from_baseline"
+#"parks_percent_change_from_baseline"
+#"transit_stations_percent_change_from_baseline"
+#"workplaces_percent_change_from_baseline"
+#"residential_percent_change_from_baseline"
+ews = ews[ , c( "date" , "retail_and_recreation_percent_change_from_baseline" ) ]
+#' Cut Google mobility data to end of April 2022 (additional data creates issues with code later)
+ews$date <- as.Date( ews$date , format = "%d/%m/%Y") # Change format of date
+ews = subset( ews , ews$date <= "2022-04-30" )
+#' Look at reverse numbers for 'parks'
+ews$parks_percent_change_from_baseline <- - ews$parks_percent_change_from_baseline
 
 ################################
 #' Process EWS time series (except test case - shifted hospitalisations)
 colnames( ews ) <- c( "date" , "cases" ) # Rename columns
 ews = ews[ !is.na( ews$cases ) , ]# Remove days with NA values
-ews = ews[ Reduce( '&' , lapply( ews , is.finite ) ) , ] # Remove days with Inf values
 ews$date <- as.Date( ews$date , format = "%d/%m/%Y") # Change format of date
 ews$time <- lubridate::decimal_date( ews$date ) # Add column for decimal date
 ews$wday <- lubridate::wday( ews$date ) # Add column for day of week
+ews = ews[ Reduce( '&' , lapply( ews , is.finite ) ) , ] # Remove days with Inf values
 
 
 ################################
@@ -746,7 +785,369 @@ saveRDS( wave_reset_dates_lead_ind , file="lgrv_wave_reset_dates.RData")
 #' 3 - Ct values
 #ews_dates_max_stdev_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
 
+#' O-gene Ct value
+ews_dates_p2_mean_O_Ct = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_O_Ct = wave_reset_dates
+ews_dates_p2_median_O_Ct = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_O_Ct = wave_reset_dates
+#' N-gene Ct value
+ews_dates_p2_mean_N_Ct = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_N_Ct = wave_reset_dates
+ews_dates_p2_median_N_Ct = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_N_Ct = wave_reset_dates
+#' S-gene Ct value
+ews_dates_p2_mean_S_Ct = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_S_Ct = wave_reset_dates
+ews_dates_p2_median_S_Ct = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_S_Ct = wave_reset_dates
+#' Control Ct value
+ews_dates_p2_mean_Ct_control = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_Ct_control = wave_reset_dates
+ews_dates_p2_median_Ct_control = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_Ct_control = wave_reset_dates
+#' Daily mean of the minimum (per sample) of the three gene Ct values
+ews_dates_p2_mean_Ct_min = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_Ct_min = wave_reset_dates
+ews_dates_p2_median_Ct_min = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_Ct_min = wave_reset_dates
+#' Daily mean of the mean (per sample) of the three gene Ct values
+ews_dates_p2_mean_Ct_mean = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_Ct_mean = wave_reset_dates
+ews_dates_p2_median_Ct_mean = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_Ct_mean = wave_reset_dates
+#' O-gene Ct value normalised for control Ct value (gene Ct - control Ct)
+ews_dates_p2_mean_O_Ct_norm = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_O_Ct_norm = wave_reset_dates
+ews_dates_p2_median_O_Ct_norm = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_O_Ct_norm = wave_reset_dates
+#' N-gene Ct value normalised for control Ct value (gene Ct - control Ct)
+ews_dates_p2_mean_N_Ct_norm = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_N_Ct_norm = wave_reset_dates
+ews_dates_p2_median_N_Ct_norm = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_N_Ct_norm = wave_reset_dates
+#' S-gene Ct value normalised for control Ct value (gene Ct - control Ct)
+ews_dates_p2_mean_S_Ct_norm = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_S_Ct_norm = wave_reset_dates
+ews_dates_p2_median_S_Ct_norm = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_S_Ct_norm = wave_reset_dates
+#' O-gene viral load proxy as per Dahdou et al (2021) = ln(2^(-(Ct - Ct_Ctrl)))
+ews_dates_p2_mean_O_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_O_vl = wave_reset_dates
+ews_dates_p2_median_O_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_O_vl = wave_reset_dates
+#' N-gene viral load proxy as per Dahdou et al (2021) = ln(2^(-(Ct - Ct_Ctrl)))
+ews_dates_p2_mean_N_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_N_vl = wave_reset_dates
+ews_dates_p2_median_N_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_N_vl = wave_reset_dates
+#' S-gene viral load proxy as per Dahdou et al (2021) = ln(2^(-(Ct - Ct_Ctrl)))
+ews_dates_p2_mean_S_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_S_vl = wave_reset_dates
+ews_dates_p2_median_S_vl = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_S_vl = wave_reset_dates
+#' Minimum of viral load proxy 
+ews_dates_p2_mean_vl_min = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_vl_min = wave_reset_dates
+ews_dates_p2_median_vl_min = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_vl_min = wave_reset_dates
+#' Mean of viral load proxy 
+ews_dates_p2_mean_vl_mean = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_vl_mean = wave_reset_dates
+ews_dates_p2_median_vl_mean = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_vl_mean = wave_reset_dates
+#' Ct min skew 
+ews_dates_p2_mean_Ct_min_skew = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_Ct_min_skew = wave_reset_dates
+ews_dates_p2_median_Ct_min_skew = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_Ct_min_skew = wave_reset_dates
+#' Ct min stdev 
+ews_dates_p2_mean_Ct_min_stdev = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_Ct_min_stdev = wave_reset_dates
+ews_dates_p2_median_Ct_min_stdev = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_Ct_min_stdev = wave_reset_dates
+#' viral load proxy maximum skew 
+ews_dates_p2_mean_vl_max_skew = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_vl_max_skew = wave_reset_dates
+ews_dates_p2_median_vl_max_skew = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_vl_max_skew = wave_reset_dates
+#' viral load proxy maximum stdev 
+ews_dates_p2_mean_vl_max_stdev = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_mean_vl_max_stdev = wave_reset_dates
+ews_dates_p2_median_vl_max_stdev = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_p2_median_vl_max_stdev = wave_reset_dates
 
+#' Compile into list
+leading_indicator_dates = list(   p2_mean_O_Ct = ews_dates_p2_mean_O_Ct
+                                , p2_mean_N_Ct = ews_dates_p2_mean_N_Ct 
+                                , p2_mean_S_Ct = ews_dates_p2_mean_S_Ct
+                                , p2_mean_Ct_control = ews_dates_p2_mean_Ct_control
+                                , p2_mean_Ct_min = ews_dates_p2_mean_Ct_min
+                                , p2_mean_Ct_mean = ews_dates_p2_mean_Ct_mean
+                                , p2_mean_O_Ct_norm = ews_dates_p2_mean_O_Ct_norm
+                                , p2_mean_N_Ct_norm = ews_dates_p2_mean_N_Ct_norm
+                                , p2_mean_S_Ct_norm = ews_dates_p2_mean_S_Ct_norm
+                                , p2_mean_O_vl = ews_dates_p2_mean_O_vl
+                                , p2_mean_N_vl = ews_dates_p2_mean_N_vl
+                                , p2_mean_N_vl = ews_dates_p2_mean_S_vl
+                                , p2_mean_vl_min = ews_dates_p2_mean_vl_min
+                                , p2_mean_vl_mean = ews_dates_p2_mean_vl_mean
+                                , p2_mean_Ct_min_skew = ews_dates_p2_mean_Ct_min_skew
+                                , p2_mean_Ct_min_stdev = ews_dates_p2_mean_Ct_min_stdev
+                                , p2_mean_vl_max_skew = ews_dates_p2_mean_vl_max_skew
+                                , p2_mean_vl_max_stdev = ews_dates_p2_mean_vl_max_stdev
+                                , p2_median_O_Ct = ews_dates_p2_median_O_Ct
+                                , p2_median_N_Ct = ews_dates_p2_median_N_Ct 
+                                , p2_median_S_Ct = ews_dates_p2_median_S_Ct
+                                , p2_median_Ct_control = ews_dates_p2_median_Ct_control
+                                , p2_median_Ct_min = ews_dates_p2_median_Ct_min
+                                , p2_median_Ct_mean = ews_dates_p2_median_Ct_mean
+                                , p2_median_O_Ct_norm = ews_dates_p2_median_O_Ct_norm
+                                , p2_median_N_Ct_norm = ews_dates_p2_median_N_Ct_norm
+                                , p2_median_S_Ct_norm = ews_dates_p2_median_S_Ct_norm
+                                , p2_median_O_vl = ews_dates_p2_median_O_vl
+                                , p2_median_N_vl = ews_dates_p2_median_N_vl
+                                , p2_median_N_vl = ews_dates_p2_median_S_vl
+                                , p2_median_vl_min = ews_dates_p2_median_vl_min
+                                , p2_median_vl_mean = ews_dates_p2_median_vl_mean
+                                , p2_median_Ct_min_skew = ews_dates_p2_median_Ct_min_skew
+                                , p2_median_Ct_min_stdev = ews_dates_p2_median_Ct_min_stdev
+                                , p2_median_vl_max_skew = ews_dates_p2_median_vl_max_skew
+                                , p2_median_vl_max_stdev = ews_dates_p2_median_vl_max_stdev
+)
+leading_indicator_names = c(  "p2_mean_O_Ct"
+                            , "p2_mean_N_Ct"
+                            , "p2_mean_S_Ct"
+                            , "p2_mean_Ct_control"
+                            , "p2_mean_Ct_min"
+                            , "p2_mean_Ct_mean"
+                            , "p2_mean_O_Ct_norm"
+                            , "p2_mean_N_Ct_norm"
+                            , "p2_mean_S_Ct_norm"
+                            , "p2_mean_O_vl"
+                            , "p2_mean_N_vl"
+                            , "p2_mean_S_vl"
+                            , "p2_mean_vl_min"
+                            , "p2_mean_vl_mean"
+                            , "p2_mean_Ct_min_skew"
+                            , "p2_mean_Ct_min_stdev"
+                            , "p2_mean_vl_max_skew"
+                            , "p2_mean_vl_max_stdev"
+                            , "p2_median_O_Ct"
+                            , "p2_median_N_Ct"
+                            , "p2_median_S_Ct"
+                            , "p2_median_Ct_control"
+                            , "p2_median_Ct_min"
+                            , "p2_median_Ct_mean"
+                            , "p2_median_O_Ct_norm"
+                            , "p2_median_N_Ct_norm"
+                            , "p2_median_S_Ct_norm"
+                            , "p2_median_O_vl"
+                            , "p2_median_N_vl"
+                            , "p2_median_S_vl"
+                            , "p2_median_vl_min"
+                            , "p2_median_vl_mean"
+                            , "p2_median_Ct_min_skew"
+                            , "p2_median_Ct_min_stdev"
+                            , "p2_median_vl_max_skew"
+                            , "p2_median_vl_max_stdev"
+)
+
+wave_reset_dates_lead_ind = list(   p2_mean_O_Ct = wave_reset_dates_p2_mean_O_Ct
+                                  , p2_mean_N_Ct = wave_reset_dates_p2_mean_N_Ct
+                                  , p2_mean_S_Ct = wave_reset_dates_p2_mean_S_Ct
+                                  , p2_mean_Ct_control = wave_reset_dates_p2_mean_Ct_control
+                                  , p2_mean_Ct_min = wave_reset_dates_p2_mean_Ct_min
+                                  , p2_mean_Ct_mean = wave_reset_dates_p2_mean_Ct_mean
+                                  , p2_mean_O_Ct_norm = wave_reset_dates_p2_mean_O_Ct_norm
+                                  , p2_mean_N_Ct_norm = wave_reset_dates_p2_mean_N_Ct_norm
+                                  , p2_mean_S_Ct_norm = wave_reset_dates_p2_mean_S_Ct_norm
+                                  , p2_mean_O_vl = wave_reset_dates_p2_mean_O_vl
+                                  , p2_mean_N_vl = wave_reset_dates_p2_mean_N_vl
+                                  , p2_mean_N_vl = wave_reset_dates_p2_mean_S_vl
+                                  , p2_mean_vl_min = wave_reset_dates_p2_mean_vl_min
+                                  , p2_mean_vl_mean = wave_reset_dates_p2_mean_vl_mean
+                                  , p2_mean_Ct_min_skew = wave_reset_dates_p2_mean_Ct_min_skew
+                                  , p2_mean_Ct_min_stdev = wave_reset_dates_p2_mean_Ct_min_stdev
+                                  , p2_mean_vl_max_skew = wave_reset_dates_p2_mean_vl_max_skew
+                                  , p2_mean_vl_max_stdev = wave_reset_dates_p2_mean_vl_max_stdev
+                                  , p2_median_O_Ct = wave_reset_dates_p2_median_O_Ct
+                                  , p2_median_N_Ct = wave_reset_dates_p2_median_N_Ct
+                                  , p2_median_S_Ct = wave_reset_dates_p2_median_S_Ct
+                                  , p2_median_Ct_control = wave_reset_dates_p2_median_Ct_control
+                                  , p2_median_Ct_min = wave_reset_dates_p2_median_Ct_min
+                                  , p2_median_Ct_mean = wave_reset_dates_p2_median_Ct_mean
+                                  , p2_median_O_Ct_norm = wave_reset_dates_p2_median_O_Ct_norm
+                                  , p2_median_N_Ct_norm = wave_reset_dates_p2_median_N_Ct_norm
+                                  , p2_median_S_Ct_norm = wave_reset_dates_p2_median_S_Ct_norm
+                                  , p2_median_O_vl = wave_reset_dates_p2_median_O_vl
+                                  , p2_median_N_vl = wave_reset_dates_p2_median_N_vl
+                                  , p2_median_N_vl = wave_reset_dates_p2_median_S_vl
+                                  , p2_median_vl_min = wave_reset_dates_p2_median_vl_min
+                                  , p2_median_vl_mean = wave_reset_dates_p2_median_vl_mean
+                                  , p2_median_Ct_min_skew = wave_reset_dates_p2_median_Ct_min_skew
+                                  , p2_median_Ct_min_stdev = wave_reset_dates_p2_median_Ct_min_stdev
+                                  , p2_median_vl_max_skew = wave_reset_dates_p2_median_vl_max_skew
+                                  , p2_median_vl_max_stdev = wave_reset_dates_p2_median_vl_max_stdev
+)
+
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+saveRDS( leading_indicator_dates , file="Ct_EWS_dates.RData")
+saveRDS( leading_indicator_names , file="Ct_EWS_names.RData")
+saveRDS( wave_reset_dates_lead_ind , file="Ct_wave_reset_dates.RData")
+
+#' 5 - Behavioural - CoMix Survey
+#' Convert to dataframe and fill empty cells with <NA>
+#' all ages
+ews_dates_age_all = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_all = wave_reset_dates
+#' 0-4 years old
+ews_dates_age_0_4 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_0_4 = wave_reset_dates
+#' 5-11 years old
+ews_dates_age_5_11 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_5_11 = wave_reset_dates
+#' 5-17 years old
+ews_dates_age_5_17 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_5_17 = wave_reset_dates
+#' All-adults 
+ews_dates_age_all_adults = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_all_adults = wave_reset_dates
+#' 18-59 years old
+ews_dates_age_18_59 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_18_59 = wave_reset_dates
+#' 60+ years old
+ews_dates_age_60_plus = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_60_plus = wave_reset_dates
+#' 18-29 years old
+ews_dates_age_18_29 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_18_29 = wave_reset_dates
+#' 30-39 years old
+ews_dates_age_30_39 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_30_39 = wave_reset_dates
+#' 40-49 years old
+ews_dates_age_40_49 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_40_49 = wave_reset_dates
+#' 50-59 years old
+ews_dates_age_50_59 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_50_59 = wave_reset_dates
+#' 60-69 years old
+ews_dates_age_60_69 = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_60_69 = wave_reset_dates
+#' 70+ years old
+ews_dates_age_70_plus = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_age_70_plus = wave_reset_dates
+
+
+#' Compile into list
+leading_indicator_dates = list(   age_all = ews_dates_age_all
+                                , age_0_4 = ews_dates_age_0_4
+                                , age_5_11 = ews_dates_age_5_11
+                                , age_5_17 = ews_dates_age_5_17
+                                , age_all_adults = ews_dates_age_all_adults
+                                , age_18_59 = ews_dates_age_18_59
+                                , age_60_plus = ews_dates_age_60_plus
+                                , age_18_29 = ews_dates_age_18_29
+                                , age_30_39 = ews_dates_age_30_39
+                                , age_40_49 = ews_dates_age_40_49
+                                , age_50_59 = ews_dates_age_50_59
+                                , age_60_69 = ews_dates_age_60_69
+                                , age_70_plus = ews_dates_age_70_plus
+                                
+                                
+                                )
+leading_indicator_names = c(  "All ages"
+                              , "0-4"
+                              , "5-11"
+                              , "5-17"
+                              , "All adults"
+                              , "18-59"
+                              , "60+"
+                              , "18-29"
+                              , "30-39"
+                              , "40-49"
+                              , "50-59"
+                              , "60-69"
+                              , "70+"
+)
+
+wave_reset_dates_lead_ind = list(   age_all = wave_reset_dates_age_all
+                                    , age_0_4 = wave_reset_dates_age_0_4
+                                    , age_5_11 = wave_reset_dates_age_5_11
+                                    , age_5_17 = wave_reset_dates_age_5_17
+                                    , age_all_adults = wave_reset_dates_age_all_adults
+                                    , age_18_59 = wave_reset_dates_age_18_59
+                                    , age_60_plus = wave_reset_dates_age_60_plus
+                                    , age_18_29 = wave_reset_dates_age_18_29
+                                    , age_30_39 = wave_reset_dates_age_30_39
+                                    , age_40_49 = wave_reset_dates_age_40_49
+                                    , age_50_59 = wave_reset_dates_age_50_59
+                                    , age_60_69 = wave_reset_dates_age_60_69
+                                    , age_60_69 = wave_reset_dates_age_60_69
+                                    , age_70_plus = wave_reset_dates_age_70_plus
+                                    )
+
+
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+saveRDS( leading_indicator_dates , file="comix_EWS_dates.RData")
+saveRDS( leading_indicator_names , file="comix_EWS_names.RData")
+saveRDS( wave_reset_dates_lead_ind , file="comix_wave_reset_dates.RData")
+
+
+#' 6 - Google mobility
+#' Convert to dataframe and fill empty cells with <NA>
+#' retail_and_recreation_percent_change_from_baseline
+ews_dates_retail_and_recreation = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_retail_and_recreation = wave_reset_dates
+#"grocery_and_pharmacy_percent_change_from_baseline"
+ews_dates_grocery_and_pharmacy = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_grocery_and_pharmacy = wave_reset_dates
+#"parks_percent_change_from_baseline"
+ews_dates_parks = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_parks = wave_reset_dates
+# reverse "parks_percent_change_from_baseline"
+ews_dates_parks_reverse = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_parks_reverse = wave_reset_dates
+#"transit_stations_percent_change_from_baseline"
+ews_dates_transit_stations = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_transit_stations = wave_reset_dates
+#"workplaces_percent_change_from_baseline"
+ews_dates_workplaces = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_workplaces = wave_reset_dates
+#"residential_percent_change_from_baseline"
+ews_dates_residential = data.frame( lapply( l , `length<-`, max(lengths(l))))
+wave_reset_dates_residential = wave_reset_dates
+
+#' Compile into list
+leading_indicator_dates = list(   retail_and_recreation = ews_dates_retail_and_recreation
+                                , grocery_and_pharmacy = ews_dates_grocery_and_pharmacy
+                                , parks = ews_dates_parks
+                                , parks_reverse = ews_dates_parks_reverse
+                                , transit_stations = ews_dates_transit_stations
+                                , workplaces = ews_dates_workplaces
+                                , residential = ews_dates_residential
+)
+leading_indicator_names = c(  "Retail & Recreation"
+                            , "Grocery & Pharmacy"
+                            , "Parks"
+                            , "Parks (reverse)"
+                            , "Transit Stations"
+                            , "Workplaces"
+                            , "Residential"
+)
+
+wave_reset_dates_lead_ind = list(   retail_and_recreation = wave_reset_dates_retail_and_recreation
+                                  , grocery_and_pharmacy = wave_reset_dates_grocery_and_pharmacy
+                                  , parks = wave_reset_dates_parks
+                                  , parks_reverse = wave_reset_dates_parks_reverse
+                                  , transit_stations = wave_reset_dates_transit_stations
+                                  , workplaces = wave_reset_dates_workplaces
+                                  , residential = wave_reset_dates_residential
+)
+
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
+saveRDS( leading_indicator_dates , file="google_mobility_EWS_dates.RData")
+saveRDS( leading_indicator_names , file="google_mobility_EWS_names.RData")
+saveRDS( wave_reset_dates_lead_ind , file="google_mobility_wave_reset_dates.RData")
 
 #########################################
 # Plot 

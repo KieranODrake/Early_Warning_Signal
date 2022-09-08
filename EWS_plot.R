@@ -34,9 +34,9 @@ ews_names <- readRDS( "lgrv_EWS_names.RData" )
 wave_reset_dates <- readRDS( "lgrv_wave_reset_dates.RData" ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
 #' 1.3 - PCR cycle threshold (Ct) values EWS
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
-ews_dates <- readRDS( "Ct_EWS_dates.RData")
-ews_names <- readRDS( "Ct_EWS_names.RData")
-wave_reset_dates <- readRDS( "Ct_wave_reset_dates.RData")
+ews_dates <- readRDS( "Ct_EWS_dates_v2.RData")
+ews_names <- readRDS( "Ct_EWS_names_v2.RData")
+wave_reset_dates <- readRDS( "Ct_wave_reset_dates_v2.RData")
 #' 1.5 - Behavioural - CoMix Survey 
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
 ews_dates = readRDS( "comix_EWS_dates.RData" )

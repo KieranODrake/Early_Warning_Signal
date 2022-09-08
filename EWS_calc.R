@@ -80,25 +80,16 @@ ews = ews[ , c( "date" , "ma_12_md_40" ) ] #ma = maximum age of cluster, and md 
 
 # 3 - SARS-CoV-2 Ct values (PCR cycle threshold)
 folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Inputs/England Ct values/Processed files'
-filename <- "Ct_p2_mean_df.csv"
+filename <- "Ct_p2_mean_df_v2.csv"
 # Or 
-filename <- "Ct_p2_median_df.csv"
+filename <- "Ct_p2_median_df_v2.csv"
 # test
 setwd( folder )
 ews = fread( filename )
 # Select data to use for EWS calculation 
-ews = ews[,c("Date","Ct_min_stdev")] #O_Ct, N_Ct, S_Ct, Control_Ct, Ct_min, Ct_mean, O_Ct_norm, N_Ct_norm, S_Ct_norm, O_vl, N_vl, S_vl, vl_min, vl_mean, Ct_min_skew, Ct_min_stdev, vl_max_skew, vl_max_stdev
+ews = ews[,c("Date","vl_max_stdev")] #O_Ct, N_Ct, S_Ct, Control_Ct, Ct_min, Ct_mean, O_Ct_norm, N_Ct_norm, S_Ct_norm, O_vl, N_vl, S_vl, vl_min, vl_mean, Ct_min_skew, Ct_min_stdev, vl_max_skew, vl_max_stdev
 #dat_type = "O-gene Ct values"
 
-#viral load test
-# test
-filename <- "viral_load_test.csv"
-setwd( folder )
-ews = fread( filename )
-# Select data to use for EWS calculation 
-ews = ews[,c("Date","viral load proxy")] #O_Ct, N-Ct, S-Ct, Control_Ct, Ct_min, Ct_mean, min_skew, mean_skew, min_stdev, mean_stdev
-colnames( ews ) <- c( "date" , "cases" ) # Rename columns
-ews$cases = -ews$cases # because lower Ct value means higher viral load
 
 #' 4 - SARS-CoV-2 positivity rates
 
@@ -173,20 +164,20 @@ message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
 #' OR
 #' Manual wave reset dates
 #' some of these dates are not in the cluster growth variance data
-manual_wave_reset = which( dat_df$date %in% as.Date( c( "2020-08-08"
-                                                        ,"2020-11-28"
-                                                        ,"2021-05-06"
-                                                        ,"2021-11-20"
-                                                        ,"2022-02-20") ) )
+#manual_wave_reset = which( dat_df$date %in% as.Date( c( "2020-08-08"
+#                                                        ,"2020-11-28"
+#                                                        ,"2021-05-06"
+#                                                        ,"2021-11-20"
+#                                                        ,"2022-02-20") ) )
 #' so use closest dates in cluster growth variance data
 #' ** still to calculate**
-manual_wave_reset = which( dat_df$date %in% as.Date( c( "2020-08-08"
-                                                        ,"2020-11-28"
-                                                        ,"2021-05-06"
-                                                        ,"2021-11-20"
-                                                        ,"2022-02-20") ) )
-wave_reset_ix_list <- manual_wave_reset
-message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
+#manual_wave_reset = which( dat_df$date %in% as.Date( c( "2020-08-08"
+#                                                        ,"2020-11-28"
+#                                                        ,"2021-05-06"
+#                                                        ,"2021-11-20"
+#                                                        ,"2022-02-20") ) )
+#wave_reset_ix_list <- manual_wave_reset
+#message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
 
 ################################
 
@@ -990,10 +981,32 @@ wave_reset_dates_lead_ind = list(   p2_mean_O_Ct = wave_reset_dates_p2_mean_O_Ct
                                   , p2_median_vl_max_stdev = wave_reset_dates_p2_median_vl_max_stdev
 )
 
+#' Make adjustments to data frames
+#leading_indicator_dates["p2_mean_Ct_min_skew"] <- ews_dates_p2_mean_Ct_min_skew
+#leading_indicator_dates["p2_mean_Ct_min_st_dev"] <- ews_dates_p2_mean_Ct_min_stdev
+#leading_indicator_dates["p2_mean_vl_max_skew"] <- ews_dates_p2_mean_vl_max_skew
+#leading_indicator_dates["p2_mean_vl_max_st_dev"] <- ews_dates_p2_mean_vl_max_stdev#
+
+#leading_indicator_dates["p2_median_Ct_min_skew"] <- ews_dates_p2_median_Ct_min_skew
+#leading_indicator_dates["p2_median_Ct_min_st_dev"] <- ews_dates_p2_median_Ct_min_stdev
+#leading_indicator_dates["p2_median_vl_max_skew"] <- ews_dates_p2_median_vl_max_skew
+#leading_indicator_dates["p2_median_vl_max_st_dev"] <- ews_dates_p2_median_vl_max_stdev
+
+#wave_reset_dates_lead_ind["p2_mean_Ct_min_skew"] <- wave_reset_dates_p2_mean_Ct_min_skew
+#wave_reset_dates_lead_ind["p2_mean_Ct_min_st_dev"] <- wave_reset_dates_p2_mean_Ct_min_stdev
+#wave_reset_dates_lead_ind["p2_mean_vl_max_skew"] <- wave_reset_dates_p2_mean_vl_max_skew
+#wave_reset_dates_lead_ind["p2_mean_vl_max_st_dev"] <- wave_reset_dates_p2_mean_vl_max_stdev
+
+#wave_reset_dates_lead_ind["p2_median_Ct_min_skew"] <- wave_reset_dates_p2_median_Ct_min_skew
+#wave_reset_dates_lead_ind["p2_median_Ct_min_st_dev"] <- wave_reset_dates_p2_median_Ct_min_stdev
+#wave_reset_dates_lead_ind["p2_median_vl_max_skew"] <- wave_reset_dates_p2_median_vl_max_skew
+#wave_reset_dates_lead_ind["p2_median_vl_max_st_dev"] <- wave_reset_dates_p2_median_vl_max_stdev
+
+#' Save data into files for loading into 'EWS_plot.R'
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
-saveRDS( leading_indicator_dates , file="Ct_EWS_dates.RData")
-saveRDS( leading_indicator_names , file="Ct_EWS_names.RData")
-saveRDS( wave_reset_dates_lead_ind , file="Ct_wave_reset_dates.RData")
+saveRDS( leading_indicator_dates , file="Ct_EWS_dates_v2.RData")
+saveRDS( leading_indicator_names , file="Ct_EWS_names_v2.RData")
+saveRDS( wave_reset_dates_lead_ind , file="Ct_wave_reset_dates_v2.RData")
 
 #' 5 - Behavioural - CoMix Survey
 #' Convert to dataframe and fill empty cells with <NA>

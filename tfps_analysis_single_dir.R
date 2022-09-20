@@ -54,10 +54,6 @@ for ( n in 1 : length( fn_suffix ) ) {
   #' Create list of scan dates
   scandates <- as.Date( regmatches( file_list , regexpr('(\\d{4}-\\d{2}-\\d{2})', file_list) ) )
 
-  #' Cycle through list of file lists that contain tfp scan output files for 
-  #' analysis
-#  for (m in 1 : length( file_list ) ){
-#    message( "Analysing ", file_list[ m ] )
   #' (Re)initiate vectors which will be added to iteratively and then formed into a 
   #' data frame after the for loop below
   date_list <- c()
@@ -80,8 +76,7 @@ for ( n in 1 : length( fn_suffix ) ) {
     #' Loop through all tfp scans in list to create time series
     for ( i in 1: length( file_list ) ) {
       #start_time_single = Sys.time()
-      message(i)
-      message( "Analysing ", file_list[ i ] )
+      message(i, " Analysing ", file_list[ i ] )
       tfps_output_filename = file_list[ i ] #"scanner-2020-08-14-min_age_7-max_age_56-min_desc_100.rds"
       tfps_output = readRDS( tfps_output_filename )
       n_cluster_raw <- nrow( tfps_output )

@@ -27,11 +27,18 @@ setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warnin
 ews_dates <- readRDS( "test_hosp_shift_EWS_dates.RData" )
 ews_names <- readRDS( "test_hosp_shift_EWS_names.RData" )
 wave_reset_dates <- readRDS( "test_hosp_shift_wave_reset_dates.RData")
-#' 1.2 - Cluster logistic growth rate variance
-setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_08/Analysis')
-ews_dates <- readRDS( "lgrv_EWS_dates.RData" ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
-ews_names <- readRDS( "lgrv_EWS_names.RData" )
-wave_reset_dates <- readRDS( "lgrv_wave_reset_dates.RData" ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
+#' 1.2.1 - Cluster logistic growth rate variance
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis')
+#"vlgr_" "v_gam_lgr" "vlgr" "vlgr_wtd" "lgr_max"
+filename_prefix = "lgr_max_"
+ews_dates        <- readRDS( paste( filename_prefix , "EWS_dates.RData" , sep = "" ) ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
+ews_names        <- readRDS( paste( filename_prefix , "EWS_names.RData" , sep = "" ) )
+wave_reset_dates <- readRDS( paste( filename_prefix , "wave_reset_dates.RData" , sep = "" ) ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
+#' 1.2.2 - Composite of cluster logistic growth rates leading indicators
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis')
+ews_dates        <- readRDS( "lead_ind_comp_EWS_dates.RData" ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
+ews_names        <- readRDS( "lead_ind_comp_EWS_names.RData" )
+wave_reset_dates <- readRDS( "lead_ind_comp_wave_reset_dates.RData" ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
 #' 1.3 - PCR cycle threshold (Ct) values EWS
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
 ews_dates <- readRDS( "Ct_EWS_dates_v2.RData")
@@ -125,7 +132,7 @@ s_n = 7 #' Number of statistics calculated for leading indicators
 #' 2 - Cluster logistic growth rate variance
 #' Dim = 32 leading indicators, 9 waves and 7 
 #' leading indicator statistics. Data in the array is the EWS date 
-li_n = 32 #' Number of leading indicators analysing
+li_n = 18 #' Number of leading indicators analysing
 w_n = 9 #' Number of waves
 s_n = 7 #' Number of statistics calculated for leading indicators
 
@@ -150,7 +157,7 @@ li_n = 7 #' Number of leading indicators analysing
 w_n = 9 #' Number of waves
 s_n = 7 #' Number of statistics calculated for leading indicators
 
-#' Below can be used for all leading indicators
+#' Below can be used for all leading indicators to transform EWS dates from lists to an array ( number of variables , n waves , n statistics )
 ews_dates_array <- array( data = NA, dim = c( li_n , w_n , s_n ))
 ews_diff_array <- array( data = NA, dim = c( li_n , w_n , s_n ))
 
@@ -213,12 +220,12 @@ ews_dates_array[ 3 , 4 , 5 ] == ews_dates[[3]][ 2 , 5]
 #' 2 - Cluster logistic growth rates as leading indicator
 #'#' Dim = 32 leading indicators, 9 waves and 7 leading indicator statistics. 
 #' Data in the array is the EWS date 
-as.Date(ews_dates_array[ 1 , 4 , 1 ],origin="1970-01-01")
-ews_dates_array[ 1 , 4 , 1 ] == ews_dates[[1]][ 1 , 1]
-as.Date(ews_dates_array[ 3 , 4 , 3 ],origin="1970-01-01")
-ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[3]][ 2 , 3]
-as.Date(ews_dates_array[ 20 , 4 , 3 ],origin="1970-01-01")
-ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[3]][ 2 , 3]
+as.Date( ews_dates_array[ 1 , 4 , 1 ] , origin = "1970-01-01" )
+ews_dates_array[ 1 , 4 , 1 ] == ews_dates[[ 1 ]][ 2 , 1]
+as.Date( ews_dates_array[ 3 , 4 , 5 ] , origin = "1970-01-01" )
+ews_dates_array[ 3 , 4 , 5 ] == ews_dates[[ 3 ]][ 2 , 5]
+as.Date( ews_dates_array[ 20 , 4 , 3 ] , origin = "1970-01-01" )
+ews_dates_array[ 3 , 4 , 3 ] == ews_dates[[ 3 ]][ 2 , 3 ]
 
 #' 3 - Ct values as leading indicator
 #'#' Dim = 36 leading indicators, 9 waves and 7 leading indicator statistics. 
@@ -310,8 +317,8 @@ lead_ind_start = 1 #' Change to plot desired leading indicators
 lead_ind_end = 4 #' Change to plot desired leading indicators
 
 #' 2.2 - Cluster logistic growth rates
-lead_ind_start = 24 #1 #8 #17 #24 #' Change to plot desired leading indicators
-lead_ind_end = 32 #7 #16 #23 #32 #' Change to plot desired leading indicators
+lead_ind_start = 1 #1 #8 #17 #24 #' Change to plot desired leading indicators
+lead_ind_end = 6 #7 #16 #23 #32 #' Change to plot desired leading indicators
 
 #' 2.3 - Ct values
 lead_ind_start = 28 #1 #10 #19 #28 #' Change to plot desired leading indicators

@@ -4,20 +4,21 @@
 #' giving the individual cluster growth rates for each date.
 #' 
 #' 1 - remove clusters without a recent sample/sequence
-#' 2 - remove clusters with sub-clusters
+#' 2 - remove clusters with sub-clusters **removed on 13 Oct 22 as removing non-external clusters does what we actually want**
 #' 3 - remove clusters with overlapping tips
 #' 4 - remove clusters that are not external
-#' 5.1 - record logistic growth rates of remaining clusters
-#' 5.2 - record cluster sizes of remaining clusters 
-#' 5.3 - record clock outlier statistic
-#' 6 - calculate variance of remaining cluster growth rates
-#' 7 - output summary time series in data frames
+#' 5 - remove clusters with high p-values
+#' 6.1 - record logistic growth rates of remaining clusters
+#' 6.2 - record cluster sizes of remaining clusters 
+#' 6.3 - record clock outlier statistic
+#' 7 - calculate variance of remaining cluster growth rates
+#' 8 - output summary time series in data frames
 
 library( magrittr ) 
 library( lubridate ) 
 library( ggplot2 )
 library( stringr )
-library(zoo)
+library( zoo )
 
 #' List of variables
 min_age = c( 7 , 14 , 28 )
@@ -26,8 +27,8 @@ min_desc = c( 20 , 50 , 100 )
 
 #' Determine whether the minimum number of descendants (cluster size) is fixed 
 #' or proportional to the number of samples in during the max-age period
-#min_desc_type = "fixed"  
-min_desc_type = "proportional"
+min_desc_type = "fixed"  
+#min_desc_type = "proportional"
 
 #' Recreate file name suffix
 counter = 0
@@ -54,8 +55,8 @@ rm( counter , i , j , k )
 
 #' TFPScan file output of format 'scanner-2021-12-22-min_age_7-max_age_84-min_desc_20.rds'
 #' 
-setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/outputs_perc/")
-#setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/outputs/")
+#setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/outputs_perc/")
+setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/outputs/")
 #fns = list.files( 'outputs', full.name=TRUE )
 fns = list.files()
 
@@ -64,7 +65,7 @@ fns = list.files()
 #'#' 1 = remove clusters without a recent sample/sequence
 extant = TRUE
 #' 2 = remove clusters with sub-clusters
-non_sub_clusters = TRUE
+non_sub_clusters = FALSE
 #' 3 = remove clusters with overlapping tips
 non_overlap = TRUE
 #' 4 = remove clusters that are not external
@@ -123,7 +124,7 @@ for ( n in 1 : length( fn_suffix ) ) {
   n_clusters_raw_list <- c()
   n_clusters_na_grth_rate_list <- c()
   n_clusters_too_old_list <- c()
-  n_clusters_sub_list <- c()
+#  n_clusters_sub_list <- c()
   n_clusters_overlap_list <- c()
   n_clusters_remaining_list <- c()
   mean_cluster_size_list <- c()
@@ -163,15 +164,16 @@ for ( n in 1 : length( fn_suffix ) ) {
       #'**OR (if want to switch off the filtering out clusters without recent samples)
       #n_cluster_too_old <- 0
       
+      #'**do not use this part (2) as the objective is accomplished by section 4 filtering out internal (non-external) clusters**
       #' 2 - Remove clusters containing sub-clusters (and the sub-clusters)
-      sub_clust <- intersect( tfps_output_filtered$cluster_id 
-                              , tfps_output_filtered$parent_number )
-      '%ni%' <- Negate("%in%") #' Define 'not in'
-      tfps_output_filtered <- subset( tfps_output_filtered 
-                                      , ( tfps_output_filtered$cluster_id %ni% sub_clust ) &
-                                        ( tfps_output_filtered$parent_number %ni% sub_clust ) )
-      n_cluster_sub <- n_cluster_raw - n_cluster_na_grth_rate - n_cluster_too_old - 
-                                                        nrow( tfps_output_filtered )
+      #sub_clust <- intersect( tfps_output_filtered$cluster_id 
+      #                        , tfps_output_filtered$parent_number )
+      #'%ni%' <- Negate("%in%") #' Define 'not in'
+      #tfps_output_filtered <- subset( tfps_output_filtered 
+      #                                , ( tfps_output_filtered$cluster_id %ni% sub_clust ) &
+      #                                  ( tfps_output_filtered$parent_number %ni% sub_clust ) )
+      #n_cluster_sub <- n_cluster_raw - n_cluster_na_grth_rate - n_cluster_too_old - 
+      #                                                  nrow( tfps_output_filtered )
       
       #' 3 - Remove clusters with overlapping tips
       
@@ -223,18 +225,23 @@ for ( n in 1 : length( fn_suffix ) ) {
       #' 4 - Remove non-external clusters from dataset
       tfps_output_filtered_overlap = subset( tfps_output_filtered_overlap , external_cluster == TRUE )
       
-      #' 5.1 - Record set of logistic growth rates for clusters (after filtering) for each scan
+      #' 5 - Remove clusters with high p-values for logistic growth rate above a threshold
+      p_threshold = 0.05
+      #p_threshold = 0.01
+      #tfps_output_filtered_overlap = subset( tfps_output_filtered_overlap , external_cluster == TRUE )
+      
+      #' 6.1 - Record set of logistic growth rates for clusters (after filtering) for each scan
       logistic_growth_rate_simple_list[[ i ]] <- tfps_output_filtered_overlap$simple_logistic_growth_rate
       logistic_growth_rate_gam_list[[ i ]] <- tfps_output_filtered_overlap$gam_logistic_growth_rate
       logistic_growth_rate_list[[ i ]] <- tfps_output_filtered_overlap$logistic_growth_rate
       
-      #' 5.2 - Record set of cluster sizes for clusters (after filtering) for each scan
+      #' 6.2 - Record set of cluster sizes for clusters (after filtering) for each scan
       cluster_size_list[[ i ]] <- tfps_output_filtered_overlap$cluster_size
       
-      #' 5.3 - Record set of clock outlier statistics (after filtering) for each scan
+      #' 6.3 - Record set of clock outlier statistics (after filtering) for each scan
       clock_outlier_list[[ i ]] <- tfps_output_filtered_overlap$clock_outlier
       
-      #' 6 - Calculate variance of cluster logistic growth rates, weighted by cluster size
+      #' 7 - Calculate variance of cluster logistic growth rates, weighted by cluster size
       #number_clusters <- nrow( tfps_output_filtered_overlap )
       cluster_sizes <- tfps_output_filtered_overlap$cluster_size
       #' Calculate for different logistic growth rates
@@ -292,37 +299,26 @@ for ( n in 1 : length( fn_suffix ) ) {
       grth_rate_var_samp_list        <- c( grth_rate_var_samp_list , cluster_growth_var_samp )
       grth_rate_simple_var_pop_list  <- c( grth_rate_simple_var_pop_list , cluster_growth_simple_var_pop )
       grth_rate_simple_var_samp_list <- c( grth_rate_simple_var_samp_list , cluster_growth_simple_var_samp )
-      
       grth_rate_gam_var_pop_list     <- c( grth_rate_gam_var_pop_list , cluster_growth_gam_var_pop )
-      
       grth_rate_gam_var_samp_list    <- c( grth_rate_gam_var_samp_list , cluster_growth_gam_var_samp )
-      
       grth_rate_min_list             <- c( grth_rate_min_list , min( growth_rates ) )
       grth_rate_simple_min_list      <- c( grth_rate_simple_min_list , min( growth_rates_simple ) )
-      
       grth_rate_gam_min_list         <- c( grth_rate_gam_min_list , min( growth_rates_gam ) )
-      
       grth_rate_max_list             <- c( grth_rate_max_list , max( growth_rates ) )
       grth_rate_simple_max_list      <- c( grth_rate_simple_max_list , max( growth_rates_simple ) )
-      
       grth_rate_gam_max_list         <- c( grth_rate_gam_max_list , max( growth_rates_gam ) )
-      
       grth_rate_mean_list            <- c( grth_rate_mean_list , mean( growth_rates ) )
       grth_rate_simple_mean_list     <- c( grth_rate_simple_mean_list , mean( growth_rates_simple ) )
-      
       grth_rate_gam_mean_list        <- c( grth_rate_gam_mean_list , mean( growth_rates_gam ) )
-      
       grth_rate_wtd_mean_list        <- c( grth_rate_wtd_mean_list , wtd_mean_growth )
       grth_rate_simple_wtd_mean_list <- c( grth_rate_simple_wtd_mean_list , wtd_mean_growth_simple )
-      
       grth_rate_gam_wtd_mean_list    <- c( grth_rate_gam_wtd_mean_list , wtd_mean_growth_gam )
-      
       clock_outlier_max_list         <- c( clock_outlier_max_list , clock_outlier_max )
       clock_outlier_mean_list        <- c( clock_outlier_mean_list , clock_outlier_mean )
       n_clusters_raw_list            <- c( n_clusters_raw_list , n_cluster_raw )
       n_clusters_na_grth_rate_list   <- c( n_clusters_na_grth_rate_list , n_cluster_na_grth_rate )
       n_clusters_too_old_list        <- c( n_clusters_too_old_list , n_cluster_too_old )
-      n_clusters_sub_list            <- c( n_clusters_sub_list , n_cluster_sub )
+      #n_clusters_sub_list            <- c( n_clusters_sub_list , n_cluster_sub )
       n_clusters_overlap_list        <- c( n_clusters_overlap_list , n_overlap_rows )
       n_clusters_remaining_list      <- c( n_clusters_remaining_list , number_clusters )
       mean_cluster_size_list         <- c( mean_cluster_size_list , mean( tfps_output_filtered_overlap$cluster_size ) )
@@ -336,7 +332,7 @@ for ( n in 1 : length( fn_suffix ) ) {
     #print( i )
     #print( end_time_total - start_time_total )
   
-    #' 7 - output summary data for time series of scans/trees into data frame
+    #' 8 - output summary data for time series of scans/trees into data frame
     #' **Possibly add quantiles to this data frame**
     tfps_growth_var <- data.frame(  "date"                        <- as.Date( date_list , origin = "1970-01-01")
                                   , "growth_rate_var_wtd"         <- grth_rate_var_wtd_list
@@ -363,7 +359,7 @@ for ( n in 1 : length( fn_suffix ) ) {
                                   , "n_clusters_raw"              <- n_clusters_raw_list
                                   , "n_clusters_na_grth_rate"     <- n_clusters_na_grth_rate_list
                                   , "n_clusters_too_old"          <- n_clusters_too_old_list
-                                  , "n_clusters_sub"              <- n_clusters_sub_list
+                                  #, "n_clusters_sub"              <- n_clusters_sub_list
                                   , "n_clusters_overlap"          <- n_clusters_overlap_list
                                   , "n_clusters_remaining"        <- n_clusters_remaining_list
                                   , "mean_cluster_size"           <- mean_cluster_size_list
@@ -393,7 +389,7 @@ for ( n in 1 : length( fn_suffix ) ) {
                                      , "n_clusters_raw"              
                                      , "n_clusters_na_grth_rate"     
                                      , "n_clusters_too_old"          
-                                     , "n_clusters_sub"
+                                     #, "n_clusters_sub"
                                      , "n_clusters_overlap"
                                      , "n_clusters_remaining"
                                      , "mean_cluster_size"
@@ -861,6 +857,62 @@ tfps_lgr_gam_wtd_mean_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min_d
                                     , "mina28_maxa84_mdperc" = tfps_min_age_28_max_age_84_growth_var_df$grth_rate_gam_wtd_mean
 )
 
+tfps_clock_outlier_max_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date
+                                        , "mina07_maxa56_md020" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa56_md050" = tfps_min_age_7_max_age_56_min_desc_50_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa56_md100" = tfps_min_age_7_max_age_56_min_desc_100_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa84_md020" = tfps_min_age_7_max_age_84_min_desc_20_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa84_md050" = tfps_min_age_7_max_age_84_min_desc_50_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa84_md100" = tfps_min_age_7_max_age_84_min_desc_100_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa56_md020" = tfps_min_age_14_max_age_56_min_desc_20_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa56_md050" = tfps_min_age_14_max_age_56_min_desc_50_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa56_md100" = tfps_min_age_14_max_age_56_min_desc_100_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa84_md020" = tfps_min_age_14_max_age_84_min_desc_20_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa84_md050" = tfps_min_age_14_max_age_84_min_desc_50_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa84_md100" = tfps_min_age_14_max_age_84_min_desc_100_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa56_md020" = tfps_min_age_28_max_age_56_min_desc_20_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa56_md050" = tfps_min_age_28_max_age_56_min_desc_50_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa56_md100" = tfps_min_age_28_max_age_56_min_desc_100_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa84_md020" = tfps_min_age_28_max_age_84_min_desc_20_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa84_md050" = tfps_min_age_28_max_age_84_min_desc_50_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa84_md100" = tfps_min_age_28_max_age_84_min_desc_100_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa56_mdperc" = tfps_min_age_7_max_age_56_growth_var_df$clock_outlier_max
+                                        , "mina07_maxa84_mdperc" = tfps_min_age_7_max_age_84_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa56_mdperc" = tfps_min_age_14_max_age_56_growth_var_df$clock_outlier_max
+                                        , "mina14_maxa84_mdperc" = tfps_min_age_14_max_age_84_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa56_mdperc" = tfps_min_age_28_max_age_56_growth_var_df$clock_outlier_max
+                                        , "mina28_maxa84_mdperc" = tfps_min_age_28_max_age_84_growth_var_df$clock_outlier_max
+)
+
+tfps_clock_outlier_mean_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date
+                                         , "mina07_maxa56_md020" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa56_md050" = tfps_min_age_7_max_age_56_min_desc_50_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa56_md100" = tfps_min_age_7_max_age_56_min_desc_100_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa84_md020" = tfps_min_age_7_max_age_84_min_desc_20_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa84_md050" = tfps_min_age_7_max_age_84_min_desc_50_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa84_md100" = tfps_min_age_7_max_age_84_min_desc_100_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa56_md020" = tfps_min_age_14_max_age_56_min_desc_20_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa56_md050" = tfps_min_age_14_max_age_56_min_desc_50_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa56_md100" = tfps_min_age_14_max_age_56_min_desc_100_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa84_md020" = tfps_min_age_14_max_age_84_min_desc_20_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa84_md050" = tfps_min_age_14_max_age_84_min_desc_50_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa84_md100" = tfps_min_age_14_max_age_84_min_desc_100_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa56_md020" = tfps_min_age_28_max_age_56_min_desc_20_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa56_md050" = tfps_min_age_28_max_age_56_min_desc_50_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa56_md100" = tfps_min_age_28_max_age_56_min_desc_100_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa84_md020" = tfps_min_age_28_max_age_84_min_desc_20_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa84_md050" = tfps_min_age_28_max_age_84_min_desc_50_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa84_md100" = tfps_min_age_28_max_age_84_min_desc_100_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa56_mdperc" = tfps_min_age_7_max_age_56_growth_var_df$clock_outlier_mean
+                                         , "mina07_maxa84_mdperc" = tfps_min_age_7_max_age_84_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa56_mdperc" = tfps_min_age_14_max_age_56_growth_var_df$clock_outlier_mean
+                                         , "mina14_maxa84_mdperc" = tfps_min_age_14_max_age_84_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa56_mdperc" = tfps_min_age_28_max_age_56_growth_var_df$clock_outlier_mean
+                                         , "mina28_maxa84_mdperc" = tfps_min_age_28_max_age_84_growth_var_df$clock_outlier_mean
+)
+
+
+
 #' Check all have the same number of dates
 #length( tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date )
 #length(  tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$growth_rate_var)
@@ -887,7 +939,7 @@ tfps_lgr_gam_wtd_mean_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min_d
 #a %ni% b
 #tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date[214]
 
-setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis/2022_10_11 Leading indicator data - separate variables')
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis/2022_10_13 - 2 - Leading indicator data - separate variables - parent-sub filter removed')
 saveRDS( tfps_min_age_7_max_age_56_min_desc_20_growth_var_df , "mina07_maxa56_md020.rds" )
 saveRDS( tfps_min_age_7_max_age_56_min_desc_50_growth_var_df , "mina07_maxa56_md050.rds" )
 saveRDS( tfps_min_age_7_max_age_56_min_desc_100_growth_var_df , "mina07_maxa56_md100.rds" )
@@ -916,7 +968,7 @@ saveRDS( tfps_min_age_28_max_age_84_min_desc_100_growth_var_df , "mina28_maxa84_
 saveRDS( tfps_min_age_28_max_age_84_growth_var_df , "mina28_maxa84_mdperc.rds" )
 
 
-folder = "C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis"
+folder = "C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis/2022_10_13 - 2 - Leading indicator data - separate variables - parent-sub filter amended"
 setwd( folder ) 
 write.csv( tfps_vlgr_samp_df , file="tfps_vlgr_samp.csv")
 write.csv( tfps_vlgr_simple_samp_df , file="tfps_vlgr_simple_samp.csv")
@@ -924,16 +976,26 @@ write.csv( tfps_vlgr_gam_samp_df , file="tfps_vlgr_gam_samp.csv")
 write.csv( tfps_vlgr_pop_df , file="tfps_vlgr_pop.csv") 
 write.csv( tfps_vlgr_simple_pop_df , file="tfps_vlgr_simple_pop.csv")
 write.csv( tfps_vlgr_gam_pop_df , file="tfps_vlgr_gam_pop.csv")
+write.csv( tfps_vlgr_wtd_df , file="tfps_vlgr_wtd.csv") #' This is vlgr / mean cluster size - not sure this really makes sense as a leading indicator as var is higher at lower cluster size Chi-squared distribution
 write.csv( tfps_lgr_max_df , file="tfps_lgr_max.csv") 
 write.csv( tfps_lgr_simple_max_df , file="tfps_lgr_simple_max.csv")
 write.csv( tfps_lgr_gam_max_df , file="tfps_lgr_gam_max.csv")
-write.csv( tfps_vlgr_mean_df , file="tfps_vlgr_mean.csv") 
-write.csv( tfps_vlgr_simple_mean_df , file="tfps_vlgr_simple_mean.csv") 
-write.csv( tfps_vlgr_gam_mean_df , file="tfps_vlgr_gam_mean.csv")
-write.csv( tfps_vlgr_wtd_mean_df , file="tfps_vlgr_wtd_mean.csv")
-write.csv( tfps_vlgr_simple_wtd_mean_df , file="tfps_vlgr_simple_wtd_mean.csv")
-write.csv( tfps_vlgr_gam_wtd_mean_df , file="tfps_vlgr_gam_wtd_mean.csv")
-write.csv( tfps_vlgr_wtd_df , file="tfps_vlgr_wtd.csv")
+write.csv( tfps_lgr_mean_df , file="tfps_lgr_mean.csv")
+write.csv( tfps_lgr_simple_mean_df , file="tfps_lgr_simple_mean.csv")
+write.csv( tfps_lgr_gam_mean_df , file="tfps_lgr_gam_mean.csv")
+write.csv( tfps_lgr_wtd_mean_df , file="tfps_lgr_wtd_mean.csv")
+write.csv( tfps_lgr_simple_wtd_mean_df , file="tfps_lgr_simple_wtd_mean.csv")
+write.csv( tfps_lgr_gam_wtd_mean_df , file="tfps_lgr_gam_wtd_mean.csv")
+write.csv( tfps_clock_outlier_max_df , file="tfps_clock_outlier_max.csv")
+write.csv( tfps_clock_outlier_mean_df , file="tfps_clock_outlier_mean.csv")
+
+#write.csv( tfps_vlgr_mean_df , file="tfps_vlgr_mean.csv") 
+#write.csv( tfps_vlgr_simple_mean_df , file="tfps_vlgr_simple_mean.csv") 
+#write.csv( tfps_vlgr_gam_mean_df , file="tfps_vlgr_gam_mean.csv")
+#write.csv( tfps_vlgr_wtd_mean_df , file="tfps_vlgr_wtd_mean.csv")
+#write.csv( tfps_vlgr_simple_wtd_mean_df , file="tfps_vlgr_simple_wtd_mean.csv")
+#write.csv( tfps_vlgr_gam_wtd_mean_df , file="tfps_vlgr_gam_wtd_mean.csv")
+#write.csv( tfps_vlgr_wtd_df , file="tfps_vlgr_wtd.csv")
 #write.csv( tfps_v_gam_lgr_df , file="tfps_v_gam_lgr.csv")
 #write.csv( tfps_lead_ind_comp_df , file="tfps_lead_ind_comp.csv")
 #write.csv( tfps_vlgr_mdperc_df , file="tfps_vlgr_mdperc.csv")

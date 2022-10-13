@@ -30,6 +30,13 @@ if(!requireNamespace("asbio", quietly = TRUE))
 if(!requireNamespace("prettyR", quietly = TRUE))
   install.packages('prettyR')
 
+library(BiocManager)
+library(data.table)
+library(R.utils)
+library(e1071)
+library(asbio)
+library(prettyR)
+
 ###############################
 #' Functions to load
 #' data_load() @ C:\Users\kdrake\OneDrive - Imperial College London\Documents\GitHub\Early_Warning_Signal
@@ -71,12 +78,13 @@ ews <- dat_df_30
 rm(dat_df_30)
 
 #' 2 - variance of cluster logistic growth rates
-folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_08/Analysis'
-filename <- "tfps_lgr_non_extant.csv" # "tfps_lgr.csv" 
+folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis'
+filename <- "tfps_lgr.csv" # "tfps_lgr_wtd.csv" # "tfps_gam_lgr.csv" # "tfps_gam_lgr_wtd.csv" #"tfps_lgr_non_extant.csv" # "tfps_lgr.csv" 
 setwd( folder )
 ews = fread( filename )
 # Select data to use for EWS calculation
-ews = ews[ , c( "date" , "ma_12_md_40" ) ] #ma = maximum age of cluster, and md = minimum descendants in cluster
+#ews = ews[ , c( "date" , "ma_12_md_40" ) ] #ma = maximum age of cluster, and md = minimum descendants in cluster
+ews = ews[ , c( "date" , "mina28_maxa56_md100" ) ] #mina = minimum age of cluster, maxa = maximum age of cluster and md = minimum descendants in cluster
 
 # 3 - SARS-CoV-2 Ct values (PCR cycle threshold)
 folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Inputs/England Ct values/Processed files'
@@ -170,14 +178,28 @@ message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
 #                                                        ,"2021-11-20"
 #                                                        ,"2022-02-20") ) )
 #' so use closest dates in cluster growth variance data
-#' ** still to calculate**
-#manual_wave_reset = which( dat_df$date %in% as.Date( c( "2020-08-08"
-#                                                        ,"2020-11-28"
-#                                                        ,"2021-05-06"
-#                                                        ,"2021-11-20"
-#                                                        ,"2022-02-20") ) )
-#wave_reset_ix_list <- manual_wave_reset
-#message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
+manual_wave_reset = which( ews$date %in% as.Date( c( "2020-08-14"
+                                                        ,"2020-11-29"
+                                                        ,"2021-05-07"
+                                                        ,"2021-11-18"
+                                                        ,"2022-02-21") ) )
+wave_reset_ix_list <- manual_wave_reset
+message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
+wave_reset_dates <- ews$date[ wave_reset_ix_list ]
+#' OR use the peak of hospitalisations to reset the leading indicator statistics calculation
+#' These are rough estimates and need to be calculated
+manual_wave_reset = which( ews$date %in% as.Date( c(  "2020-04-02"
+                                                     ,"2020-11-14"
+                                                     ,"2021-01-09"
+                                                     ,"2021-07-22"
+                                                     ,"2021-09-06"
+                                                     ,"2021-10-28"
+                                                     ,"2021-12-31"
+                                                     ,"2022-03-29") ) )
+wave_reset_ix_list <- manual_wave_reset
+message( "Wave reset dates are: " , ews$date[ wave_reset_ix_list ] )
+wave_reset_dates <- ews$date[ wave_reset_ix_list ]
+
 
 ################################
 

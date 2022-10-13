@@ -12,7 +12,7 @@
 #' produced from the 12 models incorporating 'low resolution wave filter' - see
 #' 21 June 2022 update slides)
 wave_start_dates <- c( as.Date("")           #' 1 Wuhan
-                      ,as.Date("2020-08-19") #' 2 Alpha
+                      ,as.Date("2020-08-19") #' 2 B.1.177
                       ,as.Date("2020-11-29") #' 3 Alpha
                       ,as.Date("2021-05-11") #' 4 Delta
                       ,as.Date("2021-08-03") #' 5 Delta
@@ -24,16 +24,16 @@ wave_start_dates <- c( as.Date("")           #' 1 Wuhan
 #' Load EWS dates (choose type of leading indicator to work with)
 #' 1.1 - Test - shifted hospitalisation data
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
-ews_dates <- readRDS( "test_hosp_shift_EWS_dates.RData" )
-ews_names <- readRDS( "test_hosp_shift_EWS_names.RData" )
-wave_reset_dates <- readRDS( "test_hosp_shift_wave_reset_dates.RData")
+ews_dates <- readRDS( "test_hosp_shift_EWS_dates.rds" )
+ews_names <- readRDS( "test_hosp_shift_EWS_names.rds" )
+wave_reset_dates <- readRDS( "test_hosp_shift_wave_reset_dates.rds")
 #' 1.2.1 - Cluster logistic growth rate variance
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis')
-#"vlgr_" "v_gam_lgr" "vlgr" "vlgr_wtd" "lgr_max"
-filename_prefix = "lgr_max_"
-ews_dates        <- readRDS( paste( filename_prefix , "EWS_dates.RData" , sep = "" ) ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
-ews_names        <- readRDS( paste( filename_prefix , "EWS_names.RData" , sep = "" ) )
-wave_reset_dates <- readRDS( paste( filename_prefix , "wave_reset_dates.RData" , sep = "" ) ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
+#"vlgr_mdperc" #"vlgr_" "v_gam_lgr_" "vlgr_wtd" "lgr_max"
+filename_prefix = "vlgr_mdperc_"
+ews_dates        <- readRDS( paste( filename_prefix , "EWS_dates.rds" , sep = "" ) ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
+ews_names        <- readRDS( paste( filename_prefix , "EWS_names.rds" , sep = "" ) )
+wave_reset_dates <- readRDS( paste( filename_prefix , "wave_reset_dates.rds" , sep = "" ) ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
 #' 1.2.2 - Composite of cluster logistic growth rates leading indicators
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis')
 ews_dates        <- readRDS( "lead_ind_comp_EWS_dates.RData" ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
@@ -41,19 +41,31 @@ ews_names        <- readRDS( "lead_ind_comp_EWS_names.RData" )
 wave_reset_dates <- readRDS( "lead_ind_comp_wave_reset_dates.RData" ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
 #' 1.3 - PCR cycle threshold (Ct) values EWS
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
-ews_dates <- readRDS( "Ct_EWS_dates_v2.RData")
-ews_names <- readRDS( "Ct_EWS_names_v2.RData")
-wave_reset_dates <- readRDS( "Ct_wave_reset_dates_v2.RData")
+ews_dates <- readRDS( "Ct_p2_mean_EWS_dates.rds")
+ews_names <- readRDS( "Ct_p2_mean_EWS_names.rds")
+wave_reset_dates <- readRDS( "Ct_p2_mean_wave_reset_dates.rds")
+#' Or
+ews_dates <- readRDS( "Ct_p2_median_EWS_dates.rds")
+ews_names <- readRDS( "Ct_p2_median_EWS_names.rds")
+wave_reset_dates <- readRDS( "Ct_p2_median_wave_reset_dates.rds")
+#' 1.4 - PCR positivity rate in England
+setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis')
+#"vlgr_mdperc" #"vlgr_" "v_gam_lgr_" "vlgr_wtd" "lgr_max"
+filename_prefix = "PCR_positivity_rate_"
+ews_dates        <- readRDS( paste( filename_prefix , "EWS_dates.rds" , sep = "" ) ) # EWS from cluster logistic growth rate leading indicator calculated using EWS_calc.R
+ews_names        <- readRDS( paste( filename_prefix , "EWS_names.rds" , sep = "" ) )
+wave_reset_dates <- readRDS( paste( filename_prefix , "wave_reset_dates.rds" , sep = "" ) ) # Cluster logistic growth rate leading indicator wave reset dates calculated using wave_reset_derivative_method.R in EWS_calc.R
 #' 1.5 - Behavioural - CoMix Survey 
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
-ews_dates = readRDS( "comix_EWS_dates.RData" )
-ews_names = readRDS( "comix_EWS_names.RData" )
-wave_reset_dates = readRDS( "comix_wave_reset_dates.RData" )
+filename_prefix = "CoMix_"
+ews_dates = readRDS( "CoMix_EWS_dates.rds" )
+ews_names = readRDS( "CoMix_EWS_names.rds" )
+wave_reset_dates = readRDS( "CoMix_wave_reset_dates.rds" )
 #' 1.6 - Google mobility
 setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis')
-ews_dates <- readRDS( "google_mobility_EWS_dates.RData" )
-ews_names <- readRDS( "google_mobility_EWS_names.RData" )
-wave_reset_dates <- readRDS( "google_mobility_wave_reset_dates.RData" )
+ews_dates <- readRDS( "Google_mobility_EWS_dates.rds" )
+ews_names <- readRDS( "Google_mobility_EWS_names.rds" )
+wave_reset_dates <- readRDS( "Google_mobility_wave_reset_dates.rds" )
 
 #' Manually determined start and end dates for waves to enable EWS dates to be assigned to a wave
 # Manually define wave date bands 
@@ -139,7 +151,14 @@ s_n = 7 #' Number of statistics calculated for leading indicators
 #' 3 - Ct values
 #' Dim = li_n leading indicators, 9 waves and 7 leading indicator statistics. 
 #' Data in the array is the EWS date 
-li_n = 36 #' Number of leading indicators analysing
+li_n = 19 #' Number of leading indicators analysing
+w_n = 9 #' Number of waves
+s_n = 7 #' Number of statistics calculated for leading indicators
+
+#' 4 - PCR positivity rates pillar 2 in England
+#' Dim = li_n leading indicators, 9 waves and 7 leading indicator statistics. 
+#' Data in the array is the EWS date 
+li_n = 2 #' Number of leading indicators analysing
 w_n = 9 #' Number of waves
 s_n = 7 #' Number of statistics calculated for leading indicators
 
@@ -321,8 +340,12 @@ lead_ind_start = 1 #1 #8 #17 #24 #' Change to plot desired leading indicators
 lead_ind_end = 6 #7 #16 #23 #32 #' Change to plot desired leading indicators
 
 #' 2.3 - Ct values
-lead_ind_start = 28 #1 #10 #19 #28 #' Change to plot desired leading indicators
-lead_ind_end = 36 #9 #18 #27 #36 #' Change to plot desired leading indicators
+lead_ind_start = 1 #1 #10 #19 #28 #' Change to plot desired leading indicators
+lead_ind_end = 9 #9 #18 #27 #36 #' Change to plot desired leading indicators
+
+#' 2.4 - PCR positivity rates in England (pillar 2) 
+lead_ind_start = 1 #' Change to plot desired leading indicators
+lead_ind_end = 2 #' Change to plot desired leading indicators
 
 #' 2.5 - Behavioural - CoMix Survey
 lead_ind_start = 1 #1 #5  #' Change to plot desired leading indicators
@@ -428,3 +451,4 @@ points(   lubridate::decimal_date( wave_bands$wave_start )
           , col="red"
           , cex = 3
 )
+

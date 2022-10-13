@@ -72,13 +72,13 @@ wave_reset_derivative_method <- function( dat_df, dat_type )
         #' iteration in For loop.
         GAM_test <- try( gam_fitting(  dat_df[ expanding_window_start : expanding_window_end ]
                                      , GAM_smooth_function = "ps"
-                                     , deg_free_k = min(c(window_size-5,30))) #**CHECK THIS K**
+                                     , deg_free_k = min(c(window_size-5 , 30))) #**CHECK THIS K** 30 used in min test previously
                        , silent = TRUE )
 
         ifelse ( class( GAM_test ) %in% 'try-error' , next, "continue" )
         GAM_hosp <- gam_fitting( dat_df[ expanding_window_start : expanding_window_end ]
                                        , GAM_smooth_function = "ps"
-                                       , deg_free_k = min( c( window_size-5 , 30 ) ) )#**CHECK THIS K**
+                                       , deg_free_k = min( c( window_size-5 , 30 ) ) )#**CHECK THIS K** 30 used in min test previously
                     
         #' Calculate derivative of fitted GAM
         GAM_derivative <- gratia::derivatives(   GAM_hosp 
@@ -142,7 +142,7 @@ wave_reset_derivative_method <- function( dat_df, dat_type )
           #        , ifelse(!exists("stationary_test_series"),"temp",round(stationary_test_series)), " "
           #        )
         }
-      }
+    }
   }
   
   #' Plot dataset with wave reset points marked with red circles
@@ -158,9 +158,9 @@ wave_reset_derivative_method <- function( dat_df, dat_type )
   #        , typ="l"
   #        , col="blue")
   points(  dat_df$time[wave_reset_ix_list]
-         , dat_df$cases[wave_reset_ix_list] 
-         , col="red"
-         , cex=3)
+           , dat_df$cases[wave_reset_ix_list] 
+           , col="red"
+           , cex=3)
   
   return(wave_reset_ix_list)
 }

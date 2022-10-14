@@ -78,7 +78,7 @@ if ( lead_ind_type == 1 ){
 }
 #' 2 - variance of cluster logistic growth rates
 if ( lead_ind_type == 2 ){
-  folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_09/Analysis'
+  folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis/p_val_filter_no/dataframes - statistics'
   filenames <- c(   "tfps_vlgr_samp.csv"    , "tfps_vlgr_simple_samp.csv"    , "tfps_vlgr_gam_samp.csv" 
                   , "tfps_vlgr_pop.csv"     , "tfps_vlgr_simple_pop.csv"     , "tfps_vlgr_gam_pop.csv"
                   , "tfps_vlgr_wtd.csv"
@@ -87,18 +87,12 @@ if ( lead_ind_type == 2 ){
                   , "tfps_lgr_wtd_mean.csv" , "tfps_lgr_simple_wtd_mean.csv" , "tfps_lgr_gam_wtd_mean.csv"
                   , "tfps_clock_outlier_max.csv" , "tfps_clock_outlier_mean.csv"
                   )
-  filenames_prefix <- c(   "vlgr_samp_"    , "vlgr_simple_samp_"    , "vlgr_gam_samp_" 
-                           , "vlgr_pop_"     , "vlgr_simple_pop_"     , "vlgr_gam_pop_"
-                           , "vlgr_wtd_"
-                           , "lgr_max_"      , "lgr_simple_max_"      , "lgr_gam_max_"
-                           , "lgr_mean_"     , "lgr_simple_mean_"     , "lgr_gam_mean_"
-                           , "lgr_wtd_mean_" , "lgr_simple_wtd_mean_" , "lgr_gam_wtd_mean_"
-                           , "clock_outlier_max_" , "clock_outlier_mean_"
-                      ) 
-  filename <- "tfps_vlgr_mdperc.csv" #"tfps_vlgr_mdperc.csv" #"tfps_lead_ind_comp.csv" # "tfps_vlgr.csv" "tfps_v_gam_lgr.csv" "tfps_vlgr_wtd.csv" "tfps_lgr_max.csv"
-  filename_prefix = "vlgr_mdperc_" # "vlgr_md_perc" #"lead_ind_comp_" #"lgr_max_"
+  filenames_prefix <- paste( data.frame( str_split( filenames , pattern = ".csv" ) )[ 1 , ] , "_" , sep = "" )
+  
+  #filename <- "tfps_vlgr_mdperc.csv" #"tfps_vlgr_mdperc.csv" #"tfps_lead_ind_comp.csv" # "tfps_vlgr.csv" "tfps_v_gam_lgr.csv" "tfps_vlgr_wtd.csv" "tfps_lgr_max.csv"
+  #filename_prefix = "vlgr_mdperc_" # "vlgr_md_perc" #"lead_ind_comp_" #"lgr_max_"
   setwd( folder )
-  ews_base = fread( filename ) ;  ews_base[,1] = NULL ; ews_base = data.frame( ews_base )
+  #ews_base = fread( filename ) ;  ews_base[,1] = NULL ; ews_base = data.frame( ews_base )
 }
 #' 3 - SARS-CoV-2 Ct values (PCR cycle threshold)
 if ( lead_ind_type == 3 ){
@@ -209,7 +203,7 @@ if ( lead_ind_type == 6 ){
 
 ###############################################################################
 
-for (z in filenames){
+for ( z in 1 : length( filenames ) ){
   filename = filenames[ z ]
   filename_prefix = filenames_prefix[ z ]
   ews_base = fread( filename ) ;  ews_base[ , 1 ] = NULL ; ews_base = data.frame( ews_base )
@@ -278,6 +272,7 @@ for (z in filenames){
     if ( length( manual_wave_reset ) == length( hosp_wave_peaks ) ){
       wave_reset_ix_list <- manual_wave_reset
     } else {
+      wave_reset_ix_list = c()
      for ( d in 1 : length( hosp_wave_peaks ) ){
        wave_reset_ix_list[ d ] <- which.min( abs( hosp_wave_peaks[ d ] - ews$date ) ) #'**could be improved by making the first negative value i.e. the first date after the hospitalisation wave peak**
      }
@@ -376,7 +371,7 @@ for (z in filenames){
         #' Some issues with the number of knots being greater than number of
         #' unique data points, so if there is an error then move on to next
         #' iteration in For loop.
-        ews_gam_test <- try( gam_fitting(  ews[ expanding_window_start : expanding_window_end ]
+        ews_gam_test <- try( gam_fitting(  ews[ expanding_window_start : expanding_window_end , ]
                                            , GAM_smooth_function = "cr"
                                            , deg_free_k = min( c( window_size - 5 , 50 ) ) ) #**CHECK THIS K**
                              , silent = TRUE )
@@ -738,7 +733,7 @@ for (z in filenames){
   
   #' Save outputs
   if ( lead_ind_type == 2) {
-    setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis')
+    setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/analysis/p_val_filter_no/EWS calc outputs')
   } else { setwd('C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Analysis') }
   saveRDS( leading_indicator_dates , file= paste( filename_prefix , "EWS_dates.rds" , sep = "" ) )#RData
   saveRDS( leading_indicator_names , file= paste( filename_prefix , "EWS_names.rds" , sep = "" ) )#RData

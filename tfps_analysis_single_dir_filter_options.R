@@ -1,18 +1,19 @@
 #' Code to process/analyse output from tfp scanner. The product will be a data 
 #' frame containing a time series of the variance of the cluster logistic growth
-#' rates as well as other information. A list of lists will also be produced 
-#' giving the individual cluster growth rates for each date.
+#' rates as well as other information. Several lists of lists will also be produced 
+#' giving the individual values (such as cluster growth rates) for each scan date.
 #' 
-#' 1 - remove clusters without a recent sample/sequence
-#' 2 - remove clusters with sub-clusters **removed on 13 Oct 22 as removing non-external clusters does what we actually want**
-#' 3 - remove clusters with overlapping tips
-#' 4 - remove clusters that are not external
-#' 5 - remove clusters with high p-values
-#' 6.1 - record logistic growth rates of remaining clusters
-#' 6.2 - record cluster sizes of remaining clusters 
-#' 6.3 - record clock outlier statistic
-#' 7 - calculate variance of remaining cluster growth rates
-#' 8 - output summary time series in data frames
+#' 1.1 - remove clusters without a recent sample/sequence
+#' 1.2 - remove clusters with sub-clusters **removed on 13 Oct 22 as removing non-external clusters does what we actually want**
+#' 1.3 - remove clusters that are not external
+#' 1.4 - remove clusters with high p-values
+#' 1.5 - remove clusters with overlapping tips
+#' 1.6 - replace external clusters with parent clusters if parent growth rate is at least X% of max growth rate for sub_clusters
+#' 2.1 - record logistic growth rates of remaining clusters
+#' 2.2 - record cluster sizes of remaining clusters 
+#' 2.3 - record clock outlier statistic
+#' 3 - calculate variance of remaining cluster growth rates
+#' 4 - output summary time series in data frames
 
 library( magrittr ) 
 library( lubridate ) 
@@ -62,14 +63,22 @@ fns = list.files()
 
 #' Select filters to apply to clusters (TRUE in each case means that filter will be applied)
 #'**STILL NEED TO BE INCORPORATED INTO MAIN CODE**
-#'#' 1 = remove clusters without a recent sample/sequence
+#' 1.1 = remove clusters without a recent sample/sequence
 extant = TRUE
-#' 2 = remove clusters with sub-clusters
+#' 1.2 = remove clusters with sub-clusters
 non_sub_clusters = FALSE
-#' 3 = remove clusters with overlapping tips
-non_overlap = TRUE
-#' 4 = remove clusters that are not external
+#' 1.3 = remove clusters that are not external
 external = TRUE
+#' 1.4 = remove clusters with logistic growth p-values above a threshold
+p_val_filter = TRUE
+p_threshold = 0.05 #0.01
+#' 1.5 = remove clusters with overlapping tips
+non_overlap = TRUE
+#' 1.6 = replace external clusters with parent cluster if growth rate is more than X% of max(growth sub-clusters)
+#' Objective is to include more large clusters
+#large_adjust = TRUE
+#parent_growth_threshold = 0.75 # represents 75%
+
 
 #' Cycle through sets of variables for analysis
 for ( n in 1 : length( fn_suffix ) ) {
@@ -154,94 +163,118 @@ for ( n in 1 : length( fn_suffix ) ) {
     
       tfps_output_filtered <- tfps_output
     
-      #' 1 - Remove clusters without a recent sample/sequence (14 days)
-      cut_off <-  max( tfps_output$most_recent_tip ) - 14
+      #' 1.1 - Remove clusters without a recent sample/sequence (14 days)
+      if ( extant == TRUE ) {
+        cut_off <-  max( tfps_output$most_recent_tip ) - 14
       
-      tfps_output_filtered <- subset( tfps_output_filtered ,
-                                      tfps_output_filtered$most_recent_tip >= cut_off
-                                    )
-      n_cluster_too_old <- n_cluster_raw - n_cluster_na_grth_rate - nrow( tfps_output_filtered )
-      #'**OR (if want to switch off the filtering out clusters without recent samples)
-      #n_cluster_too_old <- 0
-      
+        tfps_output_filtered <- subset( tfps_output_filtered ,
+                                        tfps_output_filtered$most_recent_tip >= cut_off
+                                      )
+        n_cluster_too_old <- n_cluster_raw - n_cluster_na_grth_rate - nrow( tfps_output_filtered )
+      } else { n_cluster_too_old <- 0 }
+
       #'**do not use this part (2) as the objective is accomplished by section 4 filtering out internal (non-external) clusters**
-      #' 2 - Remove clusters containing sub-clusters (and the sub-clusters)
-      #sub_clust <- intersect( tfps_output_filtered$cluster_id 
-      #                        , tfps_output_filtered$parent_number )
-      #'%ni%' <- Negate("%in%") #' Define 'not in'
-      #tfps_output_filtered <- subset( tfps_output_filtered 
-      #                                , ( tfps_output_filtered$cluster_id %ni% sub_clust ) &
-      #                                  ( tfps_output_filtered$parent_number %ni% sub_clust ) )
-      #n_cluster_sub <- n_cluster_raw - n_cluster_na_grth_rate - n_cluster_too_old - 
-      #                                                  nrow( tfps_output_filtered )
+      #' 1.2 - Remove clusters containing sub-clusters (and the sub-clusters)
+      if ( non_sub_clusters == TRUE ){
+        sub_clust <- intersect( tfps_output_filtered$cluster_id 
+                                , tfps_output_filtered$parent_number )
+        '%ni%' <- Negate("%in%") #' Define 'not in'
+        tfps_output_filtered <- subset( tfps_output_filtered 
+                                        , ( tfps_output_filtered$cluster_id %ni% sub_clust ) &
+                                          ( tfps_output_filtered$parent_number %ni% sub_clust ) )
+        n_cluster_sub <- n_cluster_raw - n_cluster_na_grth_rate - n_cluster_too_old - 
+                                                          nrow( tfps_output_filtered )
+      } else { n_cluster_sub = 0 }
       
-      #' 3 - Remove clusters with overlapping tips
+      #' 1.3 - Remove non-external clusters from dataset
+      if ( external = TRUE ) {
+        tfps_output_filtered = subset( tfps_output_filtered , external_cluster == TRUE )
+      }
       
-      #' Check if there are any overlapping tips before trying to identify the 
-      #' overlapping clusters (which is more time consuming)
-      tips_all = data.frame( "tips" = c())
-      if ( nrow( tfps_output_filtered ) > 0 ){ #' sometimes all clusters are removed due to sub-clusters - so need to check
-        for ( j in 1 : nrow( tfps_output_filtered ) ) { 
-          tips_single = as.data.frame( strsplit( tfps_output_filtered$tips[ j ] , "|" , fixed = TRUE ) )
-          colnames(tips_single) <- "tips"
-          tips_all <- as.data.frame( rbind( tips_all , tips_single ))
-          #message( j , " of ", nrow( tfps_output_filtered ), " clusters")
-        }
-        if ( nrow( unique( tips_all ) ) < nrow( tips_all ) ){
-          #message( "There is cluster overlapping" )
-          overlap_assessment <- TRUE
-        } else if ( nrow( unique( tips_all ) ) == nrow( tips_all ) ) { 
-          #message( "There is NO cluster overlapping" )
+      #' 1.4 - Remove clusters with high p-values for logistic growth rate above a threshold
+      if ( p_val_filter == TRUE ){
+        tfps_output_filtered = subset( tfps_output_filtered , logistic_growth_rate_p < p_threshold )
+      }
+      
+      #' 1.5 - Remove clusters with overlapping tips
+      if ( non_overlap == TRUE ){
+        #' Check if there are any overlapping tips before trying to identify the 
+        #' overlapping clusters (which is more time consuming)
+        tips_all = data.frame( "tips" = c())
+        if ( nrow( tfps_output_filtered ) > 0 ){ #' sometimes all clusters are removed due to sub-clusters - so need to check
+          for ( j in 1 : nrow( tfps_output_filtered ) ) { 
+            tips_single = as.data.frame( strsplit( tfps_output_filtered$tips[ j ] , "|" , fixed = TRUE ) )
+            colnames(tips_single) <- "tips"
+            tips_all <- as.data.frame( rbind( tips_all , tips_single ))
+            #message( j , " of ", nrow( tfps_output_filtered ), " clusters")
+          }
+          if ( nrow( unique( tips_all ) ) < nrow( tips_all ) ){
+            #message( "There is cluster overlapping" )
+            overlap_assessment <- TRUE
+          } else if ( nrow( unique( tips_all ) ) == nrow( tips_all ) ) { 
+            #message( "There is NO cluster overlapping" )
+            overlap_assessment <- FALSE
+          }
+        } else if ( nrow( tfps_output_filtered ) == 0 ){
           overlap_assessment <- FALSE
         }
-      } else if ( nrow( tfps_output_filtered ) == 0 ){
-        overlap_assessment <- FALSE
-      }
+          
+        #' Remove clusters that have overlapping tips (remove both clusters). 
+        #' Such clusters need to be removed as we only want to include 
+        #' non-overlapping clusters in our analysis.
         
-      #' Remove clusters that have overlapping tips (remove both clusters). 
-      #' Such clusters need to be removed as we only want to include 
-      #' non-overlapping clusters in our analysis.
-      
-      if ( overlap_assessment == TRUE ){
-        overlap_rows <- c()
-        tip_freq <- data.frame( table( tips_all ) )
-        tips_overlap <- data.frame( subset( tip_freq , tip_freq$Freq > 1 )$tips )
-        colnames( tips_overlap ) <- "tips"
-        for ( k in 1 : nrow( tfps_output_filtered ) ) {
-          tips_k <- as.data.frame( strsplit( tfps_output_filtered$tips[ k ] , "|" , fixed = TRUE ) )
-          colnames( tips_k ) <- "tips"
-          n_overlaps = nrow( dplyr::intersect( tips_overlap , tips_k ) )
-          if ( n_overlaps > 0 ){
-            overlap_rows <- c( overlap_rows , k )
+        if ( overlap_assessment == TRUE ){
+          overlap_rows <- c()
+          tip_freq <- data.frame( table( tips_all ) )
+          tips_overlap <- data.frame( subset( tip_freq , tip_freq$Freq > 1 )$tips )
+          colnames( tips_overlap ) <- "tips"
+          for ( k in 1 : nrow( tfps_output_filtered ) ) {
+            tips_k <- as.data.frame( strsplit( tfps_output_filtered$tips[ k ] , "|" , fixed = TRUE ) )
+            colnames( tips_k ) <- "tips"
+            n_overlaps = nrow( dplyr::intersect( tips_overlap , tips_k ) )
+            if ( n_overlaps > 0 ){
+              overlap_rows <- c( overlap_rows , k )
+            }
           }
-        }
-        n_overlap_rows <- length( overlap_rows )
-        tfps_output_filtered_overlap <- data.frame( tfps_output_filtered[ -overlap_rows , ] )
-      } else if ( overlap_assessment == FALSE ) { 
+          n_overlap_rows <- length( overlap_rows )
+          tfps_output_filtered_overlap <- data.frame( tfps_output_filtered[ -overlap_rows , ] )
+        } else if ( overlap_assessment == FALSE ) { 
+          tfps_output_filtered_overlap = tfps_output_filtered
+          n_overlap_rows = 0
+          }
+      } else {
         tfps_output_filtered_overlap = tfps_output_filtered
         n_overlap_rows = 0
-        }
+      }  
+        
       
-      #' 4 - Remove non-external clusters from dataset
-      tfps_output_filtered_overlap = subset( tfps_output_filtered_overlap , external_cluster == TRUE )
-      
-      #' 5 - Remove clusters with high p-values for logistic growth rate above a threshold
-      p_threshold = 0.05
-      #p_threshold = 0.01
-      #tfps_output_filtered_overlap = subset( tfps_output_filtered_overlap , external_cluster == TRUE )
-      
-      #' 6.1 - Record set of logistic growth rates for clusters (after filtering) for each scan
+      #' 1.6 - replace external clusters with parent cluster if growth rate is more than X% of max(growth sub-clusters)
+      #' Objective is to include more large clusters
+      #if ( large_adjust = TRUE ){
+      #  for ( i in 1 : length( unique( tfps_output_filtered_overlap$parent_number ) ) ){
+      #    cluster_select_df[ i ] = data.frame( unique( tfps_output_filtered_overlap$parent_number )[ i ]
+      #                                       , tfps_output_filtered_overlap$logistic_growth_rate
+      #    cluster_remove = c( cluster_remove , cluster_id )                                   )
+      #    subset(   tfps_output_filtered_overlap 
+      #            , tfps_output_filtered_overlap$parent_number %in% unique( tfps_output_filtered_overlap$parent_number ) )[ ,c(1, 3, 7 , 17) ]
+      #    
+      #    if ( parent_lgr > ( parent_growth_threshold * max( ) ) )
+      #    #parent_growth_threshold = 0.75 # represents 75%
+      #  }
+      #}
+        
+      #' 2.1 - Record set of logistic growth rates for clusters (after filtering) for each scan
       logistic_growth_rate_simple_list[[ i ]] <- tfps_output_filtered_overlap$simple_logistic_growth_rate
       logistic_growth_rate_gam_list[[ i ]] <- tfps_output_filtered_overlap$gam_logistic_growth_rate
       logistic_growth_rate_list[[ i ]] <- tfps_output_filtered_overlap$logistic_growth_rate
       
-      #' 6.2 - Record set of cluster sizes for clusters (after filtering) for each scan
+      #' 2.2 - Record set of cluster sizes for clusters (after filtering) for each scan
       cluster_size_list[[ i ]] <- tfps_output_filtered_overlap$cluster_size
       
-      #' 6.3 - Record set of clock outlier statistics (after filtering) for each scan
+      #' 2.3 - Record set of clock outlier statistics (after filtering) for each scan
       clock_outlier_list[[ i ]] <- tfps_output_filtered_overlap$clock_outlier
       
-      #' 7 - Calculate variance of cluster logistic growth rates, weighted by cluster size
+      #' 3 - Calculate variance of cluster logistic growth rates, weighted by cluster size
       #number_clusters <- nrow( tfps_output_filtered_overlap )
       cluster_sizes <- tfps_output_filtered_overlap$cluster_size
       #' Calculate for different logistic growth rates
@@ -332,7 +365,7 @@ for ( n in 1 : length( fn_suffix ) ) {
     #print( i )
     #print( end_time_total - start_time_total )
   
-    #' 8 - output summary data for time series of scans/trees into data frame
+    #' 4 - output summary data for time series of scans/trees into data frame
     #' **Possibly add quantiles to this data frame**
     tfps_growth_var <- data.frame(  "date"                        <- as.Date( date_list , origin = "1970-01-01")
                                   , "growth_rate_var_wtd"         <- grth_rate_var_wtd_list
@@ -395,11 +428,12 @@ for ( n in 1 : length( fn_suffix ) ) {
                                      , "mean_cluster_size"
                                     )
     
-    names( logistic_growth_rate_list ) <- date_list # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
-    names( logistic_growth_rate_simple_list ) <- date_list # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
-    names( logistic_growth_rate_gam_list ) <- date_list # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
-    names( cluster_size_list ) <- date_list # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
-    names( clock_outlier_list ) <- date_list # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
+    # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
+    names( logistic_growth_rate_list )        <- date_list 
+    names( logistic_growth_rate_simple_list ) <- date_list 
+    names( logistic_growth_rate_gam_list )    <- date_list 
+    names( cluster_size_list )                <- date_list 
+    names( clock_outlier_list )               <- date_list 
     
     #' Rename tfps_growth_var data frame and logistic_growth_rate_list with relevant names
     var_values = gsub( "-" , "_" , fn_suffix[ n ] )

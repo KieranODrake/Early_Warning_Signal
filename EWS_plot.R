@@ -71,29 +71,29 @@ wave_reset_dates <- readRDS( "Google_mobility_wave_reset_dates.rds" )
 # Manually define wave date bands 
 # (semi-arbitrary earliest possible start date for wave i.e. just after previous wave peak) 
 #'**1 - not overlapping so miss some EWS dates and not assigned to a wave**
-wave_bands_start <- c(as.Date("2020-01-01"), # 1  Wuhan
-                      as.Date("2020-04-23"), # 2  Alpha
-                      as.Date("2020-11-14"), # 3  Alpha
-                      as.Date("2021-01-06"), # 4  Delta
-                      as.Date("2021-07-18"), # 5  Delta
-                      as.Date("2021-09-05"), # 6  Delta
-                      as.Date("2021-10-22"), # 7  Omicron
-                      # as.Date("2022-01-05"), # 8  Omicron Not an obvious separate peak in hospitalisation data
-                      as.Date("2022-01-27"), # 9  Omicron
-                      as.Date("2022-03-25")  # 10 Omicron
-)
+#wave_bands_start <- c(as.Date("2020-01-01"), # 1  Wuhan
+#                      as.Date("2020-04-23"), # 2  Alpha
+#                      as.Date("2020-11-14"), # 3  Alpha
+#                      as.Date("2021-01-06"), # 4  Delta
+#                      as.Date("2021-07-18"), # 5  Delta
+#                      as.Date("2021-09-05"), # 6  Delta
+#                      as.Date("2021-10-22"), # 7  Omicron
+#                      # as.Date("2022-01-05"), # 8  Omicron Not an obvious separate peak in hospitalisation data
+#                      as.Date("2022-01-27"), # 9  Omicron
+#                      as.Date("2022-03-25")  # 10 Omicron
+#)
 # (semi-arbitrary earliest possible end date for wave i.e. mid-point of next wave peak)
-wave_bands_end <- c(as.Date("2020-03-27"), # 1  Wuhan
-                    as.Date("2020-10-10"), # 2  Alpha
-                    as.Date("2020-12-18"), # 3  Alpha
-                    as.Date("2021-06-29"), # 4  Delta
-                    as.Date("2021-08-21"), # 5  Delta
-                    as.Date("2021-10-11"), # 6  Delta
-                    as.Date("2021-12-22"), # 7  Omicron
-                    #as.Date("2022-01-18"), # 8  Omicron Not an obvious separate peak in hospitalisation data
-                    as.Date("2022-03-07"), # 9  Omicron
-                    as.Date("2022-03-29")  # 10 Omicron
-)
+#wave_bands_end <- c(as.Date("2020-03-27"), # 1  Wuhan
+#                    as.Date("2020-10-10"), # 2  Alpha
+#                    as.Date("2020-12-18"), # 3  Alpha
+#                    as.Date("2021-06-29"), # 4  Delta
+#                    as.Date("2021-08-21"), # 5  Delta
+#                    as.Date("2021-10-11"), # 6  Delta
+#                    as.Date("2021-12-22"), # 7  Omicron
+#                    #as.Date("2022-01-18"), # 8  Omicron Not an obvious separate peak in hospitalisation data
+#                    as.Date("2022-03-07"), # 9  Omicron
+#                    as.Date("2022-03-29")  # 10 Omicron
+#)
 
 #' Alternative method for defining wave bands as some EWS dates not falling witin bands
 #' Manually chosen date roughly half way between peak and trough on the wave decline
@@ -144,7 +144,7 @@ s_n = 7 #' Number of statistics calculated for leading indicators
 #' 2 - Cluster logistic growth rate variance
 #' Dim = 32 leading indicators, 9 waves and 7 
 #' leading indicator statistics. Data in the array is the EWS date 
-li_n = 18 #' Number of leading indicators analysing
+li_n = 24 #' Number of leading indicators analysing
 w_n = 9 #' Number of waves
 s_n = 7 #' Number of statistics calculated for leading indicators
 

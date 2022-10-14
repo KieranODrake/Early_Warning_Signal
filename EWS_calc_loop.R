@@ -206,6 +206,7 @@ if ( lead_ind_type == 6 ){
 for ( z in 1 : length( filenames ) ){
   filename = filenames[ z ]
   filename_prefix = filenames_prefix[ z ]
+  setwd( folder )
   ews_base = fread( filename ) ;  ews_base[ , 1 ] = NULL ; ews_base = data.frame( ews_base )
 
   #' Initialise lists ready for output

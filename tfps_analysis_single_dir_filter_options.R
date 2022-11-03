@@ -6,9 +6,9 @@
 #' 1.1 - remove clusters without a recent sample/sequence
 #' 1.2 - remove clusters with sub-clusters **removed on 13 Oct 22 as removing non-external clusters does what we actually want**
 #' 1.3 - remove clusters that are not external
-#' 1.4 - remove clusters with high p-values
-#' 1.5 - remove clusters with overlapping tips
-#' 1.6 - replace external clusters with parent clusters if parent growth rate is at least X% of max growth rate for sub_clusters
+#' 1.4 - replace sub-clusters with parent as long as the logistic growth rate is above threshold relative to sub-cluster maximum. The idea is to increase the number of larger clusters
+#' 1.5 - remove clusters with high p-values
+#' 1.6 - remove clusters with overlapping tips
 #' 2.1 - record logistic growth rates of remaining clusters
 #' 2.2 - record cluster sizes of remaining clusters 
 #' 2.3 - record clock outlier statistic
@@ -62,16 +62,19 @@ setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission
 fns = list.files()
 
 #' Select filters to apply to clusters (TRUE in each case means that filter will be applied)
-#'**STILL NEED TO BE INCORPORATED INTO MAIN CODE**
 #' 1.1 = remove clusters without a recent sample/sequence
 extant = TRUE
 #' 1.2 = remove clusters with sub-clusters
 non_sub_clusters = FALSE
 #' 1.3 = remove clusters that are not external
 external = TRUE
+#' 1.4 = replace sub-clusters with parent as long as the logistic growth rate is above threshold relative to sub-cluster maximum
+#' The idea is to increase the number of larger clusters
+large_cluster_adjust = TRUE
+parent_sub_lgr_threshold = 0.75 #' This should be varied
 #' 1.4 = remove clusters with logistic growth p-values above a threshold
 p_val_filter = TRUE
-p_threshold = 0.05 #0.01
+p_threshold = 0.05 #0.01 #10000
 #' 1.5 = remove clusters with overlapping tips
 non_overlap = TRUE
 #' 1.6 = replace external clusters with parent cluster if growth rate is more than X% of max(growth sub-clusters)
@@ -154,7 +157,7 @@ for ( n in 1 : length( fn_suffix ) ) {
     for ( i in 1: length( file_list ) ) {
       #start_time_single = Sys.time()
       message("Analysing dataset " , n , ", file " , i , ": ", file_list[ i ] )
-      tfps_output_filename = file_list[ i ] #"scanner-2020-08-14-min_age_7-max_age_56-min_desc_100.rds"
+      tfps_output_filename = "scanner-2021-11-01-min_age_7-max_age_56-min_desc_20.rds" #file_list[ i ] #"scanner-2021-11-01-min_age_7-max_age_56-min_desc_20.rds"
       tfps_output = readRDS( tfps_output_filename )
       n_cluster_raw <- nrow( tfps_output )
       tfps_date = as.Date( substr( tfps_output_filename , 9 , 20 ) )
@@ -187,16 +190,48 @@ for ( n in 1 : length( fn_suffix ) ) {
       } else { n_cluster_sub = 0 }
       
       #' 1.3 - Remove non-external clusters from dataset
-      if ( external = TRUE ) {
+      if ( external == TRUE ) {
         tfps_output_filtered = subset( tfps_output_filtered , external_cluster == TRUE )
       }
       
-      #' 1.4 - Remove clusters with high p-values for logistic growth rate above a threshold
+      #' 1.4 Replace some external clusters with the internal parent cluster where the internal parent growth rate is 
+            #' at least X% of the maximum of the external sub-cluster growth rates
+            #' Objective is to include more large clusters
+      if ( large_cluster_adjust == TRUE & external == TRUE )  {
+        #' Initialise dataframes
+        rows_to_remove_list = data.frame()
+        rows_to_add_list = data.frame()
+        for ( parent in unique( tfps_output_filtered$parent_number ) ){
+          #' look for external clusters with the same parent
+          sub_cluster_df = subset( tfps_output_filtered , tfps_output_filtered$parent_number == parent )
+          parent_cluster_df = subset( tfps_output , tfps_output$cluster_id == parent )
+          if ( nrow( parent_cluster_df ) == 0 ){ next } #' Some parent clusters are not in tfps_output
+          parent_lgr = parent_cluster_df$logistic_growth_rate
+          
+          #' if LGR of parent cluster is greater than x% of max( sub-cluster LGRs )... **NOTE THE EFFECT ON -VE LGR** 
+          if ( parent_lgr > ( parent_sub_lgr_threshold * max( sub_cluster_df$logistic_growth_rate ) ) ){
+            #' ...then replace sub-clusters with parent cluster...
+            #' ...but check the parent cluster against the 'extant' requirement and... 
+            if ( ( extant == TRUE ) & ( parent_cluster_df$most_recent_tip >= cut_off ) ){
+              #'...'LGR p-value' requirement before replacing
+              if ( parent_df$logistic_growth_rate_p < p_threshold ){
+                rows_to_remove_list = rbind( rows_to_remove_list , sub_cluster_df )
+                rows_to_add_list = rbind( rows_to_add_list , parent_cluster_df )
+              }
+            }
+          } else { next }#' if parent cluster doesn't meet criteria of LGR, extant and LGR p-value then assess next parent cluster
+        }
+        tfps_output_filtered = rbind( tfps_output_filtered , rows_to_add_list )
+        tfps_output_filtered = tfps_output_filtered[ !tfps_output_filtered$cluster_id %in% rows_to_remove_list$cluster_id , ]
+      }
+      
+      
+      #' 1.5 - Remove clusters with high p-values for logistic growth rate above a threshold
       if ( p_val_filter == TRUE ){
         tfps_output_filtered = subset( tfps_output_filtered , logistic_growth_rate_p < p_threshold )
       }
       
-      #' 1.5 - Remove clusters with overlapping tips
+      #' 1.6 - Remove clusters with overlapping tips
       if ( non_overlap == TRUE ){
         #' Check if there are any overlapping tips before trying to identify the 
         #' overlapping clusters (which is more time consuming)
@@ -248,21 +283,6 @@ for ( n in 1 : length( fn_suffix ) ) {
       }  
         
       
-      #' 1.6 - replace external clusters with parent cluster if growth rate is more than X% of max(growth sub-clusters)
-      #' Objective is to include more large clusters
-      #if ( large_adjust = TRUE ){
-      #  for ( i in 1 : length( unique( tfps_output_filtered_overlap$parent_number ) ) ){
-      #    cluster_select_df[ i ] = data.frame( unique( tfps_output_filtered_overlap$parent_number )[ i ]
-      #                                       , tfps_output_filtered_overlap$logistic_growth_rate
-      #    cluster_remove = c( cluster_remove , cluster_id )                                   )
-      #    subset(   tfps_output_filtered_overlap 
-      #            , tfps_output_filtered_overlap$parent_number %in% unique( tfps_output_filtered_overlap$parent_number ) )[ ,c(1, 3, 7 , 17) ]
-      #    
-      #    if ( parent_lgr > ( parent_growth_threshold * max( ) ) )
-      #    #parent_growth_threshold = 0.75 # represents 75%
-      #  }
-      #}
-        
       #' 2.1 - Record set of logistic growth rates for clusters (after filtering) for each scan
       logistic_growth_rate_simple_list[[ i ]] <- tfps_output_filtered_overlap$simple_logistic_growth_rate
       logistic_growth_rate_gam_list[[ i ]] <- tfps_output_filtered_overlap$gam_logistic_growth_rate

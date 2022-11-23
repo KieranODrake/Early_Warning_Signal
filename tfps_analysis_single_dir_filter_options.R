@@ -28,8 +28,7 @@ min_desc = c( 20 , 50 , 100 )
 
 #' Determine whether the minimum number of descendants (cluster size) is fixed 
 #' or proportional to the number of samples in during the max-age period
-min_desc_type = "fixed"  
-#min_desc_type = "proportional"
+min_desc_type = c( "fixed" ,  "proportional" )
 
 #' Recreate file name suffix
 counter = 0
@@ -38,28 +37,22 @@ for (i in 1 : length( min_age ) ){
   for (j in 1:length( max_age )){
     #' Next step depends on whether min descendants was fixed (and so consistently named in filenames)
     #' or is different depending on the date of the tree
-    if ( min_desc_type == "fixed"){
-      for (k in 1:length( min_desc )){
-        counter = counter + 1
-        fn_suffix[ counter ] = paste( "min_age_" , min_age[ i ] , "-max_age_" , max_age[ j ] , "-min_desc_" , min_desc[ k ], sep="" )
+    for ( mdt in min_desc_type ){
+      if ( mdt == "fixed"){
+        for (k in 1:length( min_desc )){
+          counter = counter + 1
+          fn_suffix[ counter ] = paste( "min_age_" , min_age[ i ] , "-max_age_" , max_age[ j ] , "-min_desc_" , min_desc[ k ], sep="" )
+        }
       }
-    }
-    if ( min_desc_type == "proportional" ){
-      counter = counter + 1
-      fn_suffix[ counter ] = paste( "min_age_" , min_age[ i ] , "-max_age_" , max_age[ j ] , sep="" )
+      if ( mdt == "proportional" ){
+        counter = counter + 1
+        fn_suffix[ counter ] = paste( "min_age_" , min_age[ i ] , "-max_age_" , max_age[ j ] , sep="" )
+      }
     }
   }
 }
 
-
-rm( counter , i , j , k )
-
-#' TFPScan file output of format 'scanner-2021-12-22-min_age_7-max_age_84-min_desc_20.rds'
-#' 
-#setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/outputs_perc/")
-setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/Transmission Fitness Polymorphism scanner (tfpscanner)/tfps runs/2022_10/outputs/")
-#fns = list.files( 'outputs', full.name=TRUE )
-fns = list.files()
+rm( counter , i , j , k , mdt )
 
 #' Select filters to apply to clusters (TRUE in each case means that filter will be applied)
 #' 1.1 = remove clusters without a recent sample/sequence
@@ -69,7 +62,7 @@ non_sub_clusters = FALSE
 #' 1.3 = remove clusters that are not external
 external = TRUE
 #' 1.4 = replace sub-clusters with parent as long as the logistic growth rate is above threshold relative to sub-cluster maximum
-#' The idea is to increase the number of larger clusters
+#' Objective is to include more large clusters, which may produce better leading indicators for some waves
 large_cluster_adjust = TRUE
 parent_sub_lgr_threshold = 0.75 #' This should be varied
 #' 1.4 = remove clusters with logistic growth p-values above a threshold
@@ -78,15 +71,24 @@ p_threshold = 0.05 #0.01 #10000
 #' 1.5 = remove clusters with overlapping tips
 non_overlap = TRUE
 #' 1.6 = replace external clusters with parent cluster if growth rate is more than X% of max(growth sub-clusters)
-#' Objective is to include more large clusters
-#large_adjust = TRUE
-#parent_growth_threshold = 0.75 # represents 75%
+
 
 
 #' Cycle through sets of variables for analysis
 for ( n in 1 : length( fn_suffix ) ) {
-  if ( min_desc_type == "fixed" ){ file_str_end = 51 }
-  if ( min_desc_type == "proportional" ){ file_str_end = 39 }
+  #' Check whether the minimum number of descendants is fixed or proportional using the filename suffix (fixed includes "min_desc")
+  #' TFPScan file output of format 'scanner-2021-12-22-min_age_7-max_age_84-min_desc_20.rds'
+
+  if( grepl( "min_desc" , fn_suffix[ n ] ) ){ 
+    setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/TFPS/tfps runs/2022_10/outputs/")
+    file_str_end = 51 #' For files where the number of minimum descendants is fixed
+  } else {
+    setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/TFPS/tfps runs/2022_10/outputs_perc/")
+    file_str_end = 39 #' For files where the number of minimum descendants is proportional to the number of sequences in the max cluster age period
+  }
+    
+  #fns = list.files( 'outputs', full.name=TRUE )
+  fns = list.files()
   #' This matches the middle part of the TFPScan filename 'scanner-2021-12-22-min_age_7-max_age_84-min_desc_20.rds'  
   file_list = subset( fns , substr( fns , 20 , file_str_end ) == fn_suffix[ n ] )
   #' if file_list returns nothing then change the length of the character string to match
@@ -97,7 +99,6 @@ for ( n in 1 : length( fn_suffix ) ) {
     file_list = subset( fns , substr( fns , 20 , file_str_end + 2 ) == fn_suffix[ n ] )
   }
 
-
   #' Create list of scan dates
   scandates <- as.Date( regmatches( file_list , regexpr('(\\d{4}-\\d{2}-\\d{2})', file_list) ) )
 
@@ -107,40 +108,26 @@ for ( n in 1 : length( fn_suffix ) ) {
   #'
   grth_rate_var_wtd_list <- c()
   #' variance: population and sample for logistic growth rates, simple logistic growth rates and GAM logistic growth rates
-  grth_rate_var_pop_list <- c()
-  grth_rate_var_samp_list <- c()
-  grth_rate_simple_var_pop_list <- c()
-  grth_rate_simple_var_samp_list <- c()
-  grth_rate_gam_var_pop_list <- c()
-  grth_rate_gam_var_samp_list <- c()
+  grth_rate_var_pop_list <- c()        ; grth_rate_var_samp_list <- c()
+  grth_rate_simple_var_pop_list <- c() ; grth_rate_simple_var_samp_list <- c()
+  grth_rate_gam_var_pop_list <- c()    ; grth_rate_gam_var_samp_list <- c()
   #' Minimum for logistic growth rates, simple logistic growth rates and GAM logistic growth rates
-  grth_rate_min_list <- c()
-  grth_rate_simple_min_list <- c()
-  grth_rate_gam_min_list <- c()
+  grth_rate_min_list <- c() ; grth_rate_simple_min_list <- c() ; grth_rate_gam_min_list <- c()
   #' Maximum for logistic growth rates, simple logistic growth rates and GAM logistic growth rates
-  grth_rate_max_list <- c()
-  grth_rate_simple_max_list <- c()
-  grth_rate_gam_max_list <- c()
+  grth_rate_max_list <- c() ; grth_rate_simple_max_list <- c() ; grth_rate_gam_max_list <- c()
   #' Mean for logistic growth rates, simple logistic growth rates and GAM logistic growth rates
-  grth_rate_mean_list <- c()
-  grth_rate_simple_mean_list <- c()
-  grth_rate_gam_mean_list <- c()
+  grth_rate_mean_list <- c() ; grth_rate_simple_mean_list <- c() ; grth_rate_gam_mean_list <- c()
   #' Mean Weighted by cluster size for logistic growth rates, simple logistic growth rates and GAM logistic growth rates
-  grth_rate_wtd_mean_list <- c()
-  grth_rate_simple_wtd_mean_list <- c()
-  grth_rate_gam_wtd_mean_list <- c()
+  grth_rate_wtd_mean_list <- c() ; grth_rate_simple_wtd_mean_list <- c() ; grth_rate_gam_wtd_mean_list <- c()
   #' clock outlier stats - calculated on absolute values as sign is not important
-  clock_outlier_max_list <- c( )
-  clock_outlier_mean_list <- c()
+  clock_outlier_max_list <- c( ) ; clock_outlier_mean_list <- c()
+  #' For each pango lineage, find the maximum cluster (w/ contains most samples from given lineage) 
+  # and return the maximum growth rate among all such clusters.
+  pango_lineage_max_list <- c() ; pango_lineage_max_lgr_list <- c() 
   #' Number of clusters remaining after various filters
-  n_clusters_raw_list <- c()
-  n_clusters_na_grth_rate_list <- c()
-  n_clusters_too_old_list <- c()
+  n_clusters_raw_list <- c() ; n_clusters_na_grth_rate_list <- c() ; n_clusters_too_old_list <- c()
 #  n_clusters_sub_list <- c()
-  n_clusters_overlap_list <- c()
-  n_clusters_remaining_list <- c()
-  mean_cluster_size_list <- c()
-  
+  n_clusters_overlap_list <- c() ; n_clusters_remaining_list <- c() ; mean_cluster_size_list <- c()
   
   #n_clusters_above_min_desc_prop_56 <- c()
   #n_clusters_above_min_desc_prop_84 <- c()
@@ -153,7 +140,7 @@ for ( n in 1 : length( fn_suffix ) ) {
   clock_outlier_list               <- list()
   
     #start_time_total = Sys.time()
-    #' Loop through all tfp scans in list to create time series
+    #' Loop through all TFP Scans in list to create time series
     for ( i in 1: length( file_list ) ) {
       #start_time_single = Sys.time()
       message("Analysing dataset " , n , ", file " , i , ": ", file_list[ i ] )
@@ -208,13 +195,13 @@ for ( n in 1 : length( fn_suffix ) ) {
           if ( nrow( parent_cluster_df ) == 0 ){ next } #' Some parent clusters are not in tfps_output
           parent_lgr = parent_cluster_df$logistic_growth_rate
           
-          #' if LGR of parent cluster is greater than x% of max( sub-cluster LGRs )... **NOTE THE EFFECT ON -VE LGR** 
+          #' if LGR of parent cluster is greater than x% of max( sub-cluster LGRs )... **NOTE THE EFFECT ON -VE LGR (smaller absolute value so less negative)** 
           if ( parent_lgr > ( parent_sub_lgr_threshold * max( sub_cluster_df$logistic_growth_rate ) ) ){
             #' ...then replace sub-clusters with parent cluster...
             #' ...but check the parent cluster against the 'extant' requirement and... 
             if ( ( extant == TRUE ) & ( parent_cluster_df$most_recent_tip >= cut_off ) ){
               #'...'LGR p-value' requirement before replacing
-              if ( parent_df$logistic_growth_rate_p < p_threshold ){
+              if ( parent_cluster_df$logistic_growth_rate_p < p_threshold ){
                 rows_to_remove_list = rbind( rows_to_remove_list , sub_cluster_df )
                 rows_to_add_list = rbind( rows_to_add_list , parent_cluster_df )
               }
@@ -340,6 +327,20 @@ for ( n in 1 : length( fn_suffix ) ) {
       clock_outlier_max   <- max(  abs( tfps_output_filtered_overlap$clock_outlier ) , na.rm = TRUE)
       clock_outlier_mean  <- mean( abs( tfps_output_filtered_overlap$clock_outlier ) , na.rm = TRUE)
       
+      #' Compute growth statistic
+      #' For each pango lineage, find the maximum cluster (w/ contains most samples from given lineage) 
+      #' and return the maximum growth rate among all such clusters. Repeat for all trees. 
+      #' As per tfp_growth_stat_pango.R from Erik Volz on 7 Nov 2022
+      #G1 <- sapply( ds, function(d){ #sapply( ds1, function(d){
+      tfps_output_filtered_overlap$lineage <- sapply( strsplit( tfps_output_filtered_overlap$lineage, split = '\\|' ) , '[', 1) #d$lineage <- sapply( strsplit( d$lineage, split = '\\|' ) , '[', 1)
+      lds <- split( tfps_output_filtered_overlap, tfps_output_filtered_overlap$lineage ) #lds <- split( d, d$lineage )
+      lingr <- sapply( lds, function(d) d$simple_logistic_growth_rate[ which.max( d$cluster_size )] ) #lingr <- sapply( lds, function(d) d$simple_logistic_growth_rate[which.max(d$cluster_size)] )  
+      k <- which.max( lingr )
+      #print( length( lingr ) )
+      #setNames( lingr[k], names( lds )[k] )
+      pango_lineage_max <- names( lds )[k]
+      pango_lineage_max_lgr <- data.frame(lingr[k])[1,1]
+      
       #' Plots
       #hist(growth_rates,breaks = 30)
       #plot(density(growth_rates))
@@ -375,6 +376,8 @@ for ( n in 1 : length( fn_suffix ) ) {
       n_clusters_overlap_list        <- c( n_clusters_overlap_list , n_overlap_rows )
       n_clusters_remaining_list      <- c( n_clusters_remaining_list , number_clusters )
       mean_cluster_size_list         <- c( mean_cluster_size_list , mean( tfps_output_filtered_overlap$cluster_size ) )
+      pango_lineage_max_list         <- c( pango_lineage_max_list , pango_lineage_max )
+      pango_lineage_max_lgr_list     <- c( pango_lineage_max_lgr_list , pango_lineage_max_lgr )
       
       
       #end_time_single = Sys.time()
@@ -416,6 +419,8 @@ for ( n in 1 : length( fn_suffix ) ) {
                                   , "n_clusters_overlap"          <- n_clusters_overlap_list
                                   , "n_clusters_remaining"        <- n_clusters_remaining_list
                                   , "mean_cluster_size"           <- mean_cluster_size_list
+                                  , "pango_lineage_max"           <- pango_lineage_max_list
+                                  , "pango_lineage_max_lgr"       <- pango_lineage_max_lgr_list 
                                   )
     colnames( tfps_growth_var ) <- c("date"
                                      , "growth_rate_var_wtd"         
@@ -446,6 +451,8 @@ for ( n in 1 : length( fn_suffix ) ) {
                                      , "n_clusters_overlap"
                                      , "n_clusters_remaining"
                                      , "mean_cluster_size"
+                                     , "pango_lineage_max"
+                                     , "pango_lineage_max_lgr"
                                     )
     
     # Note that these dates are in numeric format and will need to be converted using as.Date( date_list[i], origin = "1970-01-01")
@@ -965,7 +972,59 @@ tfps_clock_outlier_mean_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min
                                          , "mina28_maxa84_mdperc" = tfps_min_age_28_max_age_84_growth_var_df$clock_outlier_mean
 )
 
+tfps_pango_lineage_max_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date
+                                          , "mina07_maxa56_md020" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa56_md050" = tfps_min_age_7_max_age_56_min_desc_50_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa56_md100" = tfps_min_age_7_max_age_56_min_desc_100_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa84_md020" = tfps_min_age_7_max_age_84_min_desc_20_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa84_md050" = tfps_min_age_7_max_age_84_min_desc_50_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa84_md100" = tfps_min_age_7_max_age_84_min_desc_100_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa56_md020" = tfps_min_age_14_max_age_56_min_desc_20_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa56_md050" = tfps_min_age_14_max_age_56_min_desc_50_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa56_md100" = tfps_min_age_14_max_age_56_min_desc_100_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa84_md020" = tfps_min_age_14_max_age_84_min_desc_20_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa84_md050" = tfps_min_age_14_max_age_84_min_desc_50_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa84_md100" = tfps_min_age_14_max_age_84_min_desc_100_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa56_md020" = tfps_min_age_28_max_age_56_min_desc_20_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa56_md050" = tfps_min_age_28_max_age_56_min_desc_50_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa56_md100" = tfps_min_age_28_max_age_56_min_desc_100_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa84_md020" = tfps_min_age_28_max_age_84_min_desc_20_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa84_md050" = tfps_min_age_28_max_age_84_min_desc_50_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa84_md100" = tfps_min_age_28_max_age_84_min_desc_100_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa56_mdperc" = tfps_min_age_7_max_age_56_growth_var_df$pango_lineage_max
+                                          , "mina07_maxa84_mdperc" = tfps_min_age_7_max_age_84_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa56_mdperc" = tfps_min_age_14_max_age_56_growth_var_df$pango_lineage_max
+                                          , "mina14_maxa84_mdperc" = tfps_min_age_14_max_age_84_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa56_mdperc" = tfps_min_age_28_max_age_56_growth_var_df$pango_lineage_max
+                                          , "mina28_maxa84_mdperc" = tfps_min_age_28_max_age_84_growth_var_df$pango_lineage_max
+)
 
+tfps_pango_lineage_max_lgr_df = data.frame(  "date" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date
+                                         , "mina07_maxa56_md020" = tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa56_md050" = tfps_min_age_7_max_age_56_min_desc_50_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa56_md100" = tfps_min_age_7_max_age_56_min_desc_100_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa84_md020" = tfps_min_age_7_max_age_84_min_desc_20_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa84_md050" = tfps_min_age_7_max_age_84_min_desc_50_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa84_md100" = tfps_min_age_7_max_age_84_min_desc_100_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa56_md020" = tfps_min_age_14_max_age_56_min_desc_20_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa56_md050" = tfps_min_age_14_max_age_56_min_desc_50_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa56_md100" = tfps_min_age_14_max_age_56_min_desc_100_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa84_md020" = tfps_min_age_14_max_age_84_min_desc_20_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa84_md050" = tfps_min_age_14_max_age_84_min_desc_50_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa84_md100" = tfps_min_age_14_max_age_84_min_desc_100_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa56_md020" = tfps_min_age_28_max_age_56_min_desc_20_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa56_md050" = tfps_min_age_28_max_age_56_min_desc_50_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa56_md100" = tfps_min_age_28_max_age_56_min_desc_100_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa84_md020" = tfps_min_age_28_max_age_84_min_desc_20_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa84_md050" = tfps_min_age_28_max_age_84_min_desc_50_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa84_md100" = tfps_min_age_28_max_age_84_min_desc_100_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa56_mdperc" = tfps_min_age_7_max_age_56_growth_var_df$pango_lineage_max_lgr
+                                         , "mina07_maxa84_mdperc" = tfps_min_age_7_max_age_84_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa56_mdperc" = tfps_min_age_14_max_age_56_growth_var_df$pango_lineage_max_lgr
+                                         , "mina14_maxa84_mdperc" = tfps_min_age_14_max_age_84_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa56_mdperc" = tfps_min_age_28_max_age_56_growth_var_df$pango_lineage_max_lgr
+                                         , "mina28_maxa84_mdperc" = tfps_min_age_28_max_age_84_growth_var_df$pango_lineage_max_lgr
+)
 
 #' Check all have the same number of dates
 #length( tfps_min_age_7_max_age_56_min_desc_20_growth_var_df$date )
@@ -1042,6 +1101,8 @@ write.csv( tfps_lgr_simple_wtd_mean_df , file="tfps_lgr_simple_wtd_mean.csv")
 write.csv( tfps_lgr_gam_wtd_mean_df , file="tfps_lgr_gam_wtd_mean.csv")
 write.csv( tfps_clock_outlier_max_df , file="tfps_clock_outlier_max.csv")
 write.csv( tfps_clock_outlier_mean_df , file="tfps_clock_outlier_mean.csv")
+write.csv( tfps_pango_lineage_max_df     , file="tfps_pango_lineage_max.csv")
+write.csv( tfps_pango_lineage_max_lgr_df , file="tfps_pango_lineage_max_lgr.csv")
 
 #write.csv( tfps_vlgr_mean_df , file="tfps_vlgr_mean.csv") 
 #write.csv( tfps_vlgr_simple_mean_df , file="tfps_vlgr_simple_mean.csv") 

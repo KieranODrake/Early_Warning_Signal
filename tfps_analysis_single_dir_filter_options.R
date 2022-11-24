@@ -64,10 +64,10 @@ external = TRUE
 #' 1.4 = replace sub-clusters with parent as long as the logistic growth rate is above threshold relative to sub-cluster maximum
 #' Objective is to include more large clusters, which may produce better leading indicators for some waves
 large_cluster_adjust = TRUE
-parent_sub_lgr_threshold = 0.75 #' This should be varied
+parent_sub_lgr_threshold = 0.60 #' This should be varied
 #' 1.4 = remove clusters with logistic growth p-values above a threshold
 p_val_filter = TRUE
-p_threshold = 0.05 #0.01 #10000
+p_threshold = 0.01 #0.01 #10000
 #' 1.5 = remove clusters with overlapping tips
 non_overlap = TRUE
 #' 1.6 = replace external clusters with parent cluster if growth rate is more than X% of max(growth sub-clusters)
@@ -144,7 +144,7 @@ for ( n in 1 : length( fn_suffix ) ) {
     for ( i in 1: length( file_list ) ) {
       #start_time_single = Sys.time()
       message("Analysing dataset " , n , ", file " , i , ": ", file_list[ i ] )
-      tfps_output_filename = "scanner-2021-11-01-min_age_7-max_age_56-min_desc_20.rds" #file_list[ i ] #"scanner-2021-11-01-min_age_7-max_age_56-min_desc_20.rds"
+      tfps_output_filename = "scanner-2020-09-06-min_age_7-max_age_56-min_desc_31.rds" #file_list[ i ] #"scanner-2021-11-01-min_age_7-max_age_56-min_desc_20.rds"
       tfps_output = readRDS( tfps_output_filename )
       n_cluster_raw <- nrow( tfps_output )
       tfps_date = as.Date( substr( tfps_output_filename , 9 , 20 ) )
@@ -323,24 +323,30 @@ for ( n in 1 : length( fn_suffix ) ) {
       #' mean cluster size is smaller the variance of growth rates will be noisier
       cluster_growth_var_wtd <- cluster_growth_var_samp / mean( tfps_output_filtered_overlap$cluster_size , na.rm = TRUE)
       
-      #' Record clock outlier stats - calculated on absolute values as the sign is not important
-      clock_outlier_max   <- max(  abs( tfps_output_filtered_overlap$clock_outlier ) , na.rm = TRUE)
-      clock_outlier_mean  <- mean( abs( tfps_output_filtered_overlap$clock_outlier ) , na.rm = TRUE)
-      
-      #' Compute growth statistic
-      #' For each pango lineage, find the maximum cluster (w/ contains most samples from given lineage) 
-      #' and return the maximum growth rate among all such clusters. Repeat for all trees. 
-      #' As per tfp_growth_stat_pango.R from Erik Volz on 7 Nov 2022
-      #G1 <- sapply( ds, function(d){ #sapply( ds1, function(d){
-      tfps_output_filtered_overlap$lineage <- sapply( strsplit( tfps_output_filtered_overlap$lineage, split = '\\|' ) , '[', 1) #d$lineage <- sapply( strsplit( d$lineage, split = '\\|' ) , '[', 1)
-      lds <- split( tfps_output_filtered_overlap, tfps_output_filtered_overlap$lineage ) #lds <- split( d, d$lineage )
-      lingr <- sapply( lds, function(d) d$simple_logistic_growth_rate[ which.max( d$cluster_size )] ) #lingr <- sapply( lds, function(d) d$simple_logistic_growth_rate[which.max(d$cluster_size)] )  
-      k <- which.max( lingr )
-      #print( length( lingr ) )
-      #setNames( lingr[k], names( lds )[k] )
-      pango_lineage_max <- names( lds )[k]
-      pango_lineage_max_lgr <- data.frame(lingr[k])[1,1]
-      
+      if ( nrow( tfps_output_filtered_overlap ) != 0 ){
+        #' Record clock outlier stats - calculated on absolute values as the sign is not important
+        clock_outlier_max   <- max(  abs( tfps_output_filtered_overlap$clock_outlier ) , na.rm = TRUE)
+        clock_outlier_mean  <- mean( abs( tfps_output_filtered_overlap$clock_outlier ) , na.rm = TRUE)
+        
+        #' Compute growth statistic
+        #' For each pango lineage, find the maximum cluster (w/ contains most samples from given lineage) 
+        #' and return the maximum growth rate among all such clusters. Repeat for all trees. 
+        #' As per tfp_growth_stat_pango.R from Erik Volz on 7 Nov 2022
+        #G1 <- sapply( ds, function(d){ #sapply( ds1, function(d){
+        tfps_output_filtered_overlap$lineage <- sapply( strsplit( tfps_output_filtered_overlap$lineage, split = '\\|' ) , '[', 1) #d$lineage <- sapply( strsplit( d$lineage, split = '\\|' ) , '[', 1)
+        lds <- split( tfps_output_filtered_overlap, tfps_output_filtered_overlap$lineage ) #lds <- split( d, d$lineage )
+        lingr <- sapply( lds, function(d) d$simple_logistic_growth_rate[ which.max( d$cluster_size )] ) #lingr <- sapply( lds, function(d) d$simple_logistic_growth_rate[which.max(d$cluster_size)] )  
+        k <- which.max( lingr )
+        #print( length( lingr ) )
+        #setNames( lingr[k], names( lds )[k] )
+        pango_lineage_max <- names( lds )[k]
+        pango_lineage_max_lgr <- data.frame(lingr[k])[1,1]
+      }  else {
+        clock_outlier_max     <- NA
+        clock_outlier_mean    <- NA
+        pango_lineage_max     <- NA
+        pango_lineage_max_lgr <- NA
+      }
       #' Plots
       #hist(growth_rates,breaks = 30)
       #plot(density(growth_rates))

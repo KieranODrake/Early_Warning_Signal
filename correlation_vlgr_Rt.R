@@ -151,6 +151,60 @@ par(mfrow = c(1,1))
 plot(lubridate::decimal_date(vlgr_data_df[,1]),vlgr_data_df[,2],ylim=c(0,10),typ="l")
 lines(drt_dt_extended$time,drt_dt_extended[,7]*0.1+1,col="red",typ="l")
 
+#' Plot d(Rt)/dt against Var(LGR)
+#' Make size of points relative to sample size for computation of Var(LGR) (point size ranging from cex= 0.5 to 5)
+setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/TFPS/tfps runs/2022_11/analysis_new_pango_stat_2/large_cluster_adjust_lgr_threshold_false/p_val_filter_001/dataframes_variables")
+tfps_data = readRDS("tfps_min_age_14_max_age_84_growth_var_df.rds")
+setwd("C:/Users/kdrake/OneDrive - Imperial College London/Documents/TFPS/tfps runs/2022_11/analysis_new_pango_stat_2/large_cluster_adjust_lgr_threshold_false/p_val_filter_001/dataframes_variables")
+tfps_data = readRDS("tfps_min_age_7_max_age_56_growth_var_df.rds")
+
+vlgr_sample_size = tfps_data$n_clusters_remaining ; message("min=",min(tfps_data$n_clusters_remaining)) ; message("max=",max(tfps_data$n_clusters_remaining))
+vlgr_sample_size = tfps_data$n_clusters_remaining * tfps_data$mean_cluster_size ; message("min=",min(vlgr_sample_size,na.rm=TRUE)) ; message("max=",max(vlgr_sample_size,na.rm=TRUE))
+
+point_size = ( ( vlgr_sample_size / max( vlgr_sample_size , na.rm=TRUE ) ) * 4.5 ) + 0.5
+
+#' Make colour of points indicative of time
+point_colour = rainbow( length( vlgr_data_df[,1] ) +50, start = 1, end = max(1, length( vlgr_data_df[,1] ) - 1)/ length( vlgr_data_df[,1] ) , alpha = 0.75)
+point_colour = heat.colors( length( vlgr_data_df[,1] ) +100, alpha = 0.5 )
+point_colour = terrain.colors( length( vlgr_data_df[,1] ) +100, alpha = 0.5 )
+
+par(mfrow = c(5,1))
+plot(lubridate::decimal_date(vlgr_data_df[,1]),replicate(length( vlgr_data_df[,1] ),1),col=point_colour,cex=4,pch=16,cex.axis=1.5,cex.lab=1.5,xlab="Year",ylab="")
+
+par(mfrow = c(1,1))
+plot( vlgr_data_df[,1582]*point_size , drt_dt_extended[,7] , xlab="Var(LGR)", ylab="d(Rt)/dt", cex.axis=1.5,cex.lab=1.5,col = point_colour ,cex = point_size ,pch = 16) #ylim=c(0,10),typ="l")
+plot( vlgr_data_df[,1555+1]*point_size , drt_dt_extended[,7] , xlab="Var(LGR)", ylab="d(Rt)/dt", cex.axis=1.5,cex.lab=1.5,col = point_colour ,cex = point_size ,pch = 16) #ylim=c(0,10),typ="l")
+abline(h=0)
+
+#' Load case/hospitalisation data
+folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/Early Warning Signal/Inputs'
+#filename <- "data_2022-May-09 - UK Covid-19 cases by sample date.csv"
+filename <- "data_2022-May-09 - UK Covid-19 hospital admissions.csv"
+#dat_type <- "cases"
+dat_type <- "hospitalisations"
+#' data_load() @ C:\Users\kdrake\GitHub\Early_Warning_Signal
+library(data.table)
+dat_df <- data_load( folder , filename , dat_type ) # Outputs cases_df(date,cases,time,wday)
+par( mfrow = c( 1 , 1 ) )
+plot( dat_df$time
+      , dat_df$cases
+      , xlab = "Date"
+      , ylab = "UK Covid-19 hospitalisations"
+      , cex.lab = 1.25
+      , cex.axis = 1.25
+      , xlim = c( dat_df$time[ 1 ] , max( dat_df$time ) )
+      , ylim = c(0, 5000)
+      #, xaxt = "n"
+      , xaxs="i"
+      , yaxs="i" #' Makes plot box tight to values
+      , typ="l"
+      , lwd = 1.5
+      , col = "black" #data_colour[2]
+)
+points()
+points(lubridate::decimal_date(vlgr_data_df[,1]),replicate(length( vlgr_data_df[,1] ),1),col=point_colour,cex=4,pch=16,cex.axis=1.5,cex.lab=1.5,xlab="Year",ylab="")
+
+
 #' Compute correlations across all Var(LGR) leading indicators
 #' Also shift up to 28 days (moving leading indicator date forward in time)
 shift <- function( x , n ){

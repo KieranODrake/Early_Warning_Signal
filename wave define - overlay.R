@@ -16,7 +16,7 @@ install.packages("gratia") #https://gavinsimpson.github.io/gratia/
 ###############################
 
 # Load data, trim and organise
-folder <- 'C:/Users/kdrake/Documents/GitHub/Early_Warning_Signal'
+folder <- 'C:/Users/kdrake/OneDrive - Imperial College London/Documents/GitHub/Early_Warning_Signal'
 
 filename <- "data_2022-May-09 - UK Covid-19 cases by sample date.csv"
 dat_type <- "cases"

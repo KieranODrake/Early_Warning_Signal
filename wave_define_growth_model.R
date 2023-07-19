@@ -15,7 +15,7 @@
 #' @param m Generalised additive model for cases/hospitalisations generated 
 #'    using mgcv::gam()
 #' @param cases_df A data frame representing line-listed case data with required 
-#'    columns: date (yyyy-mm-dd), number of cases/hospitalisations.
+#'    columns: date (yyyy-mm-dd), number of cases or hospitalisations.
 #' @param dat_type Covid-19 "cases" or "hospitalisations"
 #' @param wave_bands_df Broad date ranges for UK Covid-19 waves. Used for
 #'    categorising identified wave start/end dates by wave. 

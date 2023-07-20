@@ -5,4 +5,4 @@ The Transmission Fitness Polymorphism (TFP) Scanner (https://github.com/mrc-ide/
 
 A similar method for generating EWS was also applied to other non-phylogenomic leading indicators: PCR Ct values, test positivity rate, Google mobility, CoMix survey, and time-shifted hospitalisation data.
 
-'Process overview.pdf' provides a summary of the scripts used in the analysis and how they interact.
+'Process overview.pdf' provides a summary of the scripts used in the analysis and how they interact. The numbered folders correspond to the steps described in 'Process overview.pdf'.

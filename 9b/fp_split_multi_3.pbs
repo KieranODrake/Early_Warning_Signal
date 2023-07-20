@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -lwalltime=08:00:00
+#PBS -lselect=1:ncpus=1:mem=64gb:gpfs=true
+#PBS -J 1-72
+
+## Load environment
+module load anaconda3/personal
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate R4
+
+## Create temporary directory on the computer node
+export JOB_NUM=$(echo ${PBS_JOBID} | cut -f 1 -d '.' | cut -f 1 -d '[')
+export WORKDIR="${EPHEMERAL}/${JOB_NUM}.${PBS_ARRAY_INDEX}"
+mkdir -p $WORKDIR
+
+## Copy across required files to job working directory
+## First copy files from this directory so that have information for which scan directories to copy
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/fp_split_2023_03/array_input_multi_2.txt $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/fp_split_2023_03/fp_split_multi_3.pbs $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/fp_split_2023_03/2_false_positive_split_function_HPC_v2.R $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/fp_split_2023_03/false_positive_split_env_HPC_start_v2.RData $WORKDIR
+
+## Move to Working directory
+cd $WORKDIR
+
+## Run R script with job array number as input
+Rscript $WORKDIR/2_false_positive_split_function_HPC_v2.R $(head -n $PBS_ARRAY_INDEX array_input_multi_2.txt | tail -1)
+
+## Copy output files from job temporary working directory
+cp -R $WORKDIR/output_*.rds $HOME/tfps_2023_02/quantile_historical/analysis/fp_split_2023_03/output/
+
+conda deactivate

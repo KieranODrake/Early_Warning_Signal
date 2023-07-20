@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -lwalltime=08:00:00
+#PBS -lselect=1:ncpus=1:mem=8gb:gpfs=true
+#PBS -J 1-24
+
+## Load environment
+module load anaconda3/personal
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate R4
+
+## Create temporary directory on the computer node
+export JOB_NUM=$(echo ${PBS_JOBID} | cut -f 1 -d '.' | cut -f 1 -d '[')
+export WORKDIR="${EPHEMERAL}/${JOB_NUM}.${PBS_ARRAY_INDEX}"
+mkdir -p $WORKDIR
+
+## Copy across required files to job working directory
+## First copy files from this directory so that have information for which scan directories to copy
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/array_input_1_24.txt $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/folder_list.txt $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/tfps_compile_time_series_large_adjust_060_pval_filter_001.pbs $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/analysis/tfps_analysis_lgr_th_060_pval_filter_001_HPC_array.R $WORKDIR
+
+## Create path for TFP Scan files
+cd $WORKDIR
+export TFPS_SCAN_FOLDER=$(head -n $PBS_ARRAY_INDEX folder_list.txt | tail -1)
+export TFPS_SCAN_PATH="$HOME/tfps_2023_02/quantile_historical/outputs/$TFPS_SCAN_FOLDER/"
+cp -R $TFPS_SCAN_PATH $WORKDIR
+
+## Run R script with job array number as input
+Rscript $WORKDIR/tfps_analysis_lgr_th_060_pval_filter_001_HPC_array.R $(head -n $PBS_ARRAY_INDEX array_input_1_24.txt | tail -1)
+
+## Copy output files from job temporary working directory
+cp -R $WORKDIR/*.rds $HOME/tfps_2023_02/quantile_historical/analysis/large_cluster_adjust_lgr_threshold_060/p_val_filter_001/
+
+conda deactivate

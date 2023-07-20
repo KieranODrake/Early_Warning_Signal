@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -lwalltime=08:00:00
+#PBS -lselect=1:ncpus=1:mem=8gb
+#PBS -J 1-100
+
+## Load environment
+module load anaconda3/personal
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate R4
+
+## Create temporary directory on the computer node
+export JOB_NUM=$(echo ${PBS_JOBID} | cut -f 1 -d '.' | cut -f 1 -d '[')
+export WORKDIR="${EPHEMERAL}/${JOB_NUM}.${PBS_ARRAY_INDEX}"
+mkdir -p $WORKDIR
+
+## Copy across required files to job working directory
+## First copy files from this directory so that have information for which Tree files to copy
+cp -R $HOME/tfps_2023_02/tre_lists/tre_list_1_100.txt $WORKDIR
+cp -R $HOME/tfps_2023_02/array_inputs/array_input_1_100.txt $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/scripts/tfps_run_tre1_100_7_56_20.pbs $WORKDIR
+cp -R $HOME/tfps_2023_02/quantile_historical/scripts/R_scripts/tfps_load_7_56_20.R $WORKDIR
+
+## Create path for Tree file
+cd $WORKDIR
+export TREE_FILENAME=$(head -n $PBS_ARRAY_INDEX tre_list_1_100.txt | tail -1)
+export TREE_PATH="$HOME/tfps/Trees/1_238/$TREE_FILENAME"
+cp $TREE_PATH $WORKDIR
+
+## Copy starting environment to working directory
+cp -R $HOME/tfps_2023_02/tfps-env-HPC-start_v5.RData $WORKDIR
+
+## Run R script with job array number as input
+Rscript $WORKDIR/tfps_load_7_56_20.R $(head -n $PBS_ARRAY_INDEX array_input_1_100.txt | tail -1)
+
+## Copy output files from job temporary working directory
+cp -R $WORKDIR/tfpscan-*/*.rds $HOME/tfps_2023_02/quantile_historical/outputs/mina07_maxa56_mind20
+
+conda deactivate
